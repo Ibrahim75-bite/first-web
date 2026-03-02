@@ -1,0 +1,6 @@
+model_code,weight,height,name_en,name_ar,material_en,material_ar,description_en,description_ar,sku,color_en,color_ar
+U1001-PN01,2.5,30,Test Vase,مزهرية اختبار,Ceramic,سيراميك,Test decorative vase,مزهرية ديكور اختبار,U1001-PN01-WH,White,أبيض
+U1001-PN01,2.5,30,Test Vase,مزهرية اختبار,Ceramic,سيراميك,Test decorative vase,مزهرية ديكور اختبار,U1001-PN01-BK,Black,أسود
+U1002-PN02,3.1,45,Glass Bowl,وعاء زجاجي,Glass,زجاج,Decorative glass bowl,وعاء زجاجي ديكور,U1002-PN02-BL,Blue,أزرق
+BROKEN_ROW,,45,Broken Item,,Glass,زجاج,,وصف مكسور,U9999-PN99-RD,Red,أحمر
+U1003-PN03,4.0,50,Metal Lamp,مصباح معدني,Metal,معدن,Modern metal lamp,مصباح معدني حديث,U1003-PN03-GD,Gold,ذهبي
