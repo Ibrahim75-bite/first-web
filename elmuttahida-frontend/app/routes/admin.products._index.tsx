@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { useState, useEffect, useContext } from "react";
-import { LanguageContext } from "../../context/LanguageContext";
+import { LanguageContext } from "../context/LanguageContext";
 
 export default function AdminProductsList() {
   const [products, setProducts] = useState([]);

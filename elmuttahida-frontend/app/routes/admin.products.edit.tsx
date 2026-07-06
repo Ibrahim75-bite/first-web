@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router";
 import { useState, useEffect, useContext } from "react";
-import { LanguageContext } from "../../context/LanguageContext";
+import { LanguageContext } from "../context/LanguageContext";
 
 export default function AdminProductEdit() {
   const { id } = useParams();

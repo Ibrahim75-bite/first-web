@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { useState, useContext } from "react";
-import { LanguageContext } from "../../context/LanguageContext";
+import { LanguageContext } from "../context/LanguageContext";
 
 export default function AdminProductNew() {
   const navigate = useNavigate();
