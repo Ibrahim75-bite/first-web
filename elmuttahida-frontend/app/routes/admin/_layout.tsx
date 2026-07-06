@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router";
-import { useState, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import { LanguageContext } from "../../context/LanguageContext";
 
 export default function AdminLayout() {
@@ -7,31 +7,53 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { lang, setLang, dir } = useContext(LanguageContext);
 
+  // Notifications state for new orders
+  const [newOrdersCount, setNewOrdersCount] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedCount = localStorage.getItem("new_orders_count");
+      return savedCount !== null ? parseInt(savedCount, 10) : 3;
+    }
+    return 3;
+  });
+
+  // Clear new orders notification when viewing the orders list
+  useEffect(() => {
+    if (location.pathname === "/admin/orders") {
+      setNewOrdersCount(0);
+      localStorage.setItem("new_orders_count", "0");
+    }
+  }, [location.pathname]);
+
   const navigation = [
     { 
       name: lang === 'ar' ? 'لوحة التحكم' : 'Dashboard', 
       href: '/admin', 
-      icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' 
+      icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+      badge: null
     },
     { 
       name: lang === 'ar' ? 'المنتجات' : 'Products', 
       href: '/admin/products', 
-      icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' 
+      icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
+      badge: null
     },
     { 
       name: lang === 'ar' ? 'الفئات' : 'Categories', 
       href: '/admin/categories', 
-      icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' 
+      icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z',
+      badge: null
     },
     { 
       name: lang === 'ar' ? 'الطلبات' : 'Orders', 
       href: '/admin/orders', 
-      icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' 
+      icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
+      badge: 'new'
     },
     { 
       name: lang === 'ar' ? 'الإعدادات' : 'Settings', 
       href: '/admin/settings', 
-      icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' 
+      icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z',
+      badge: null
     },
   ];
 
@@ -77,7 +99,12 @@ export default function AdminLayout() {
                   <svg className={`h-5 w-5 ${dir === 'rtl' ? 'ml-3' : 'mr-3'} ${isActive ? 'text-amber-500' : 'text-neutral-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} />
                   </svg>
-                  {item.name}
+                  <span className="flex-grow">{item.name}</span>
+                  {item.badge === 'new' && newOrdersCount > 0 && (
+                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-neutral-950 text-xs font-bold animate-pulse shrink-0">
+                      {newOrdersCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
@@ -124,7 +151,12 @@ export default function AdminLayout() {
                   <svg className={`h-5 w-5 transition-colors ${dir === 'rtl' ? 'ml-4' : 'mr-4'} ${isActive ? 'text-amber-400' : 'text-neutral-600 group-hover:text-neutral-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={item.icon} />
                   </svg>
-                  {item.name}
+                  <span className="flex-grow">{item.name}</span>
+                  {item.badge === 'new' && newOrdersCount > 0 && (
+                    <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-neutral-950 text-xs font-bold animate-pulse shrink-0">
+                      {newOrdersCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}
