@@ -146,11 +146,24 @@ const FULL_PRODUCT_SELECT = `
 router.get("/slug/:slug", async (req, res) => {
     try {
         const slug = (req.params.slug || "").trim();
-        const { lang = "en" } = req.query;
+        const { lang: requestedLang } = req.query;
 
         if (!slug) {
             return res.status(400).json({ error: "Slug parameter is required" });
         }
+
+        // 1. Find product_id and language_code for this slug
+        const slugLookup = await pool.query(
+            "SELECT product_id, language_code FROM product_translations WHERE slug = $1 LIMIT 1",
+            [slug]
+        );
+
+        if (slugLookup.rows.length === 0) {
+            return res.status(404).json({ error: `Product with slug "${slug}" not found` });
+        }
+
+        const { product_id, language_code: targetLang } = slugLookup.rows[0];
+        const lang = requestedLang || targetLang;
 
         const cacheKey = `slug:${slug}:${lang}`;
         const cached = getCached(cacheKey);
@@ -158,21 +171,41 @@ router.get("/slug/:slug", async (req, res) => {
 
         const result = await pool.query(`
           ${FULL_PRODUCT_SELECT}
-          FROM product_translations t
-          JOIN products p ON t.product_id = p.id
+          FROM products p
+          JOIN product_translations t ON p.id = t.product_id
           LEFT JOIN product_variants v ON p.id = v.product_id
           LEFT JOIN variant_images i ON v.id = i.variant_id
           LEFT JOIN product_tags pt ON p.id = pt.product_id
           LEFT JOIN tags tg ON pt.tag_id = tg.id
           LEFT JOIN tag_translations tt
             ON tg.id = tt.tag_id AND tt.language_code = $2
-          WHERE t.slug = $1
+          WHERE p.id = $1
             AND t.language_code = $2
           ORDER BY v.sku ASC, i.display_order ASC
-        `, [slug, lang]);
+        `, [product_id, lang]);
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: `Product with slug "${slug}" not found` });
+            // Fallback: if no translation for requested lang, try the slug's lang
+            const fallbackResult = await pool.query(`
+                ${FULL_PRODUCT_SELECT}
+                FROM products p
+                JOIN product_translations t ON p.id = t.product_id
+                LEFT JOIN product_variants v ON p.id = v.product_id
+                LEFT JOIN variant_images i ON v.id = i.variant_id
+                LEFT JOIN product_tags pt ON p.id = pt.product_id
+                LEFT JOIN tags tg ON pt.tag_id = tg.id
+                LEFT JOIN tag_translations tt
+                  ON tg.id = tt.tag_id AND tt.language_code = $3
+                WHERE p.id = $1
+                  AND t.language_code = $3
+                ORDER BY v.sku ASC, i.display_order ASC
+            `, [product_id, lang, targetLang]);
+
+            if (fallbackResult.rows.length === 0) {
+                return res.status(404).json({ error: `Product details for "${slug}" not found` });
+            }
+            const product = groupRowsIntoProduct(fallbackResult.rows, targetLang);
+            return res.json(product);
         }
 
         const product = groupRowsIntoProduct(result.rows, lang);

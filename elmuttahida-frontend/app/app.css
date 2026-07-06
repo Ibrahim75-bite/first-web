@@ -1,15 +1,38 @@
 @import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-arabic: "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+
+  /* Custom Colors */
+  --color-primary: #c4a484;
+  --color-primary-dark: #a38666;
+  --color-secondary: #1a1a1a;
+  --color-surface: #f9f8f6;
+  --color-surface-dark: #101010;
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-white dark:bg-[#101622] text-secondary dark:text-white font-sans antialiased;
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
+/* RTL Support */
+html[dir="rtl"] {
+  font-family: var(--font-arabic);
+}
+
+/* Text shadow utility */
+@utility text-shadow {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Smooth transitions */
+@utility transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
