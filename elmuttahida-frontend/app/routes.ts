@@ -16,6 +16,9 @@ export default [
         route("admin/products", "routes/admin.products._index.tsx"),
         route("admin/products/new", "routes/admin.products.new.tsx"),
         route("admin/products/:id", "routes/admin.products.edit.tsx"),
+        route("admin/categories", "routes/admin.categories._index.tsx"),
+        route("admin/orders", "routes/admin.orders._index.tsx"),
+        route("admin/settings", "routes/admin.settings._index.tsx"),
     ]),
 
     route("*", "routes/catch-all.tsx"),
