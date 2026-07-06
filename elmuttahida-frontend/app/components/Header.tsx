@@ -5,6 +5,9 @@ import { LanguageContext } from "../context/LanguageContext";
 
 export function Header() {
     const location = useLocation();
+    if (location.pathname.startsWith("/admin")) {
+        return null;
+    }
     const isHome = location.pathname === "/";
     const [isScrolled, setIsScrolled] = useState(false);
     const { theme, toggleTheme } = useContext(ThemeContext);

@@ -1,8 +1,12 @@
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { useContext } from "react";
 import { LanguageContext } from "../context/LanguageContext";
 
 export function Footer() {
+    const location = useLocation();
+    if (location.pathname.startsWith("/admin")) {
+        return null;
+    }
     const { lang } = useContext(LanguageContext);
     const isArabic = lang === "ar";
 
