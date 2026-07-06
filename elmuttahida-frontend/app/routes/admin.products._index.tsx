@@ -35,6 +35,19 @@ export default function AdminProductsList() {
       });
   }, []);
 
+  const formatPrice = (price: any) => {
+    // Default fallback price if undefined
+    const num = price ? parseFloat(price) : 299.00;
+    const savedCurrency = localStorage.getItem("currency") || "USD ($)";
+    if (savedCurrency.includes("EGP")) {
+      return isAr ? `${num} ج.م` : `EGP ${num}`;
+    } else if (savedCurrency.includes("EUR")) {
+      return `€${num}`;
+    } else {
+      return `$${num}`;
+    }
+  };
+
   return (
     <div dir={dir}>
       <div className="flex justify-between items-center mb-8">
@@ -74,17 +87,19 @@ export default function AdminProductsList() {
                 </tr>
               ) : (
                 products.map((product: any) => (
-                  <tr key={product.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/20 transition-colors">
-                    <td className={`px-6 py-4 font-mono text-neutral-300 ${isAr ? 'text-right' : 'text-left'}`}>{product.sku}</td>
+                  <tr key={product.product_id || product.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/20 transition-colors">
+                    <td className={`px-6 py-4 font-mono text-neutral-300 ${isAr ? 'text-right' : 'text-left'}`}>
+                      {product.model_sku || product.sku || "-"}
+                    </td>
                     <td className={`px-6 py-4 text-white font-medium ${isAr ? 'text-right' : 'text-left'}`}>{product.name}</td>
-                    <td className={`px-6 py-4 ${isAr ? 'text-right' : 'text-left'}`}>${product.base_price}</td>
+                    <td className={`px-6 py-4 ${isAr ? 'text-right' : 'text-left'}`}>{formatPrice(product.base_price)}</td>
                     <td className={`px-6 py-4 ${isAr ? 'text-right' : 'text-left'}`}>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">
                         {t.inStock}
                       </span>
                     </td>
                     <td className={`px-6 py-4 ${isAr ? 'text-left' : 'text-right'}`}>
-                      <Link to={`/admin/products/${product.id}`} className="text-amber-500 hover:text-amber-400 font-medium">
+                      <Link to={`/admin/products/${product.product_id || product.id}`} className="text-amber-500 hover:text-amber-400 font-medium">
                         {t.edit}
                       </Link>
                     </td>

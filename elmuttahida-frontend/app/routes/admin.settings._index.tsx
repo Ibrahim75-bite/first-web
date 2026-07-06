@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { LanguageContext } from "../context/LanguageContext";
 
 export default function AdminSettings() {
@@ -24,8 +24,25 @@ export default function AdminSettings() {
   });
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    const savedName = localStorage.getItem("storeName") || "Elmuttahida";
+    const savedEmail = localStorage.getItem("email") || "info@elmuttahida.com";
+    const savedWhatsapp = localStorage.getItem("whatsapp") || "+20123456789";
+    const savedCurrency = localStorage.getItem("currency") || "USD ($)";
+    setFormData({
+      storeName: savedName,
+      email: savedEmail,
+      whatsapp: savedWhatsapp,
+      currency: savedCurrency,
+    });
+  }, []);
+
   const handleSubmit = (e: any) => {
     e.preventDefault();
+    localStorage.setItem("storeName", formData.storeName);
+    localStorage.setItem("email", formData.email);
+    localStorage.setItem("whatsapp", formData.whatsapp);
+    localStorage.setItem("currency", formData.currency);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
