@@ -10,5 +10,13 @@ export default [
     route("product/:slug", "routes/product.$slug.tsx"),
     route("cart", "routes/cart.tsx"),
     route("products/custom-finishes", "routes/custom-finishes.tsx"), // Optional placeholder if needed
+    // Admin Routes
+    layout("routes/admin/_layout.tsx", [
+        route("admin", "routes/admin._index.tsx"),
+        route("admin/products", "routes/admin.products._index.tsx"),
+        route("admin/products/new", "routes/admin.products.new.tsx"),
+        route("admin/products/:id", "routes/admin.products.edit.tsx"),
+    ]),
+
     route("*", "routes/catch-all.tsx"),
 ] satisfies RouteConfig;
