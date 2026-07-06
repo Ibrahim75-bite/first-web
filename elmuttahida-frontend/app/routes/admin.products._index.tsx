@@ -1,9 +1,26 @@
 import { Link } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { LanguageContext } from "../../context/LanguageContext";
 
 export default function AdminProductsList() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { lang, dir } = useContext(LanguageContext);
+  const isAr = lang === "ar";
+
+  const t = {
+    title: isAr ? "دليل المنتجات" : "Products Catalog",
+    addNew: isAr ? "إضافة منتج جديد" : "Add New Product",
+    sku: isAr ? "رمز SKU" : "SKU",
+    name: isAr ? "اسم المنتج (EN)" : "Name (EN)",
+    price: isAr ? "السعر" : "Price",
+    stock: isAr ? "المخزون" : "Stock",
+    actions: isAr ? "العمليات" : "Actions",
+    loading: isAr ? "جاري تحميل المنتجات..." : "Loading products...",
+    empty: isAr ? "لم يتم العثور على منتجات. أضف منتجًا للبدء." : "No products found. Create one to get started.",
+    inStock: isAr ? "متوفر" : "In Stock",
+    edit: isAr ? "تعديل" : "Edit",
+  };
 
   useEffect(() => {
     fetch("http://localhost:5000/api/products")
@@ -19,14 +36,14 @@ export default function AdminProductsList() {
   }, []);
 
   return (
-    <div>
+    <div dir={dir}>
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">Products Catalog</h1>
+        <h1 className="text-3xl font-bold text-white">{t.title}</h1>
         <Link 
           to="/admin/products/new" 
           className="bg-amber-500 hover:bg-amber-600 text-black font-semibold py-2 px-4 rounded-xl transition-colors"
         >
-          Add New Product
+          {t.addNew}
         </Link>
       </div>
 
@@ -35,40 +52,40 @@ export default function AdminProductsList() {
           <table className="w-full text-left text-sm text-neutral-400">
             <thead className="bg-neutral-950/50 text-neutral-300 border-b border-neutral-800">
               <tr>
-                <th scope="col" className="px-6 py-4 font-medium">SKU</th>
-                <th scope="col" className="px-6 py-4 font-medium">Name (EN)</th>
-                <th scope="col" className="px-6 py-4 font-medium">Price</th>
-                <th scope="col" className="px-6 py-4 font-medium">Stock</th>
-                <th scope="col" className="px-6 py-4 font-medium text-right">Actions</th>
+                <th scope="col" className={`px-6 py-4 font-medium ${isAr ? 'text-right' : 'text-left'}`}>{t.sku}</th>
+                <th scope="col" className={`px-6 py-4 font-medium ${isAr ? 'text-right' : 'text-left'}`}>{t.name}</th>
+                <th scope="col" className={`px-6 py-4 font-medium ${isAr ? 'text-right' : 'text-left'}`}>{t.price}</th>
+                <th scope="col" className={`px-6 py-4 font-medium ${isAr ? 'text-right' : 'text-left'}`}>{t.stock}</th>
+                <th scope="col" className={`px-6 py-4 font-medium ${isAr ? 'text-left' : 'text-right'}`}>{t.actions}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-neutral-500">
-                    Loading products...
+                    {t.loading}
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-neutral-500">
-                    No products found. Create one to get started.
+                    {t.empty}
                   </td>
                 </tr>
               ) : (
                 products.map((product: any) => (
                   <tr key={product.id} className="border-b border-neutral-800/50 hover:bg-neutral-800/20 transition-colors">
-                    <td className="px-6 py-4 font-mono text-neutral-300">{product.sku}</td>
-                    <td className="px-6 py-4 text-white font-medium">{product.name}</td>
-                    <td className="px-6 py-4">${product.base_price}</td>
-                    <td className="px-6 py-4">
+                    <td className={`px-6 py-4 font-mono text-neutral-300 ${isAr ? 'text-right' : 'text-left'}`}>{product.sku}</td>
+                    <td className={`px-6 py-4 text-white font-medium ${isAr ? 'text-right' : 'text-left'}`}>{product.name}</td>
+                    <td className={`px-6 py-4 ${isAr ? 'text-right' : 'text-left'}`}>${product.base_price}</td>
+                    <td className={`px-6 py-4 ${isAr ? 'text-right' : 'text-left'}`}>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">
-                        In Stock
+                        {t.inStock}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className={`px-6 py-4 ${isAr ? 'text-left' : 'text-right'}`}>
                       <Link to={`/admin/products/${product.id}`} className="text-amber-500 hover:text-amber-400 font-medium">
-                        Edit
+                        {t.edit}
                       </Link>
                     </td>
                   </tr>

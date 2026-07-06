@@ -1,11 +1,14 @@
 import { useParams, Link, useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { LanguageContext } from "../../context/LanguageContext";
 
 export default function AdminProductEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { lang, dir } = useContext(LanguageContext);
+  const isAr = lang === "ar";
   
   const [formData, setFormData] = useState({
     sku: "",
@@ -18,6 +21,27 @@ export default function AdminProductEdit() {
     name_ar: "",
     description_ar: "",
   });
+
+  const t = {
+    backToProducts: isAr ? "العودة إلى المنتجات" : "Back to Products",
+    editProduct: isAr ? "تعديل المنتج" : "Edit Product",
+    saveChanges: isAr ? "حفظ التغييرات" : "Save Changes",
+    saving: isAr ? "جاري الحفظ..." : "Saving...",
+    coreInfo: isAr ? "المعلومات الأساسية" : "Core Information",
+    sku: isAr ? "رمز SKU" : "SKU",
+    basePrice: isAr ? "السعر الأساسي ($)" : "Base Price ($)",
+    localizationContent: isAr ? "محتوى الترجمة واللغات" : "Localization Content",
+    english: isAr ? "النسخة الإنجليزية" : "English Version",
+    arabic: isAr ? "النسخة العربية" : "Arabic Version",
+    productName: isAr ? "اسم المنتج" : "Product Name",
+    description: isAr ? "وصف المنتج" : "Description",
+    status: isAr ? "الحالة" : "Status",
+    visibility: isAr ? "حالة الظهور" : "Visibility",
+    active: isAr ? "نشط (منشور)" : "Active (Published)",
+    draft: isAr ? "مسودة (مخفي)" : "Draft (Hidden)",
+    archived: isAr ? "مؤرشف" : "Archived",
+    loading: isAr ? "جاري تحميل تفاصيل المنتج..." : "Loading product details...",
+  };
 
   useEffect(() => {
     // Mocking initial data for the dashboard UI demonstration
@@ -52,25 +76,27 @@ export default function AdminProductEdit() {
   };
 
   if (loading) {
-    return <div className="text-neutral-400">Loading product details...</div>;
+    return <div className="text-neutral-400 p-8">{t.loading}</div>;
   }
 
   return (
-    <div>
+    <div dir={dir}>
       <div className="flex justify-between items-center mb-8">
         <div>
           <Link to="/admin/products" className="text-neutral-400 hover:text-white mb-2 inline-flex items-center text-sm transition-colors">
-            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            Back to Products
+            <svg className={`w-4 h-4 ${isAr ? 'ml-1 rotate-180' : 'mr-1'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            {t.backToProducts}
           </Link>
-          <h1 className="text-3xl font-bold text-white">Edit Product</h1>
+          <h1 className="text-3xl font-bold text-white">{t.editProduct}</h1>
         </div>
         <button 
           onClick={handleSubmit}
           disabled={saving}
           className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black font-semibold py-2 px-6 rounded-xl transition-colors flex items-center"
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? t.saving : t.saveChanges}
         </button>
       </div>
 
@@ -79,10 +105,10 @@ export default function AdminProductEdit() {
         <div className="lg:col-span-2 space-y-6">
           
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">Core Information</h2>
+            <h2 className="text-xl font-bold text-white mb-6">{t.coreInfo}</h2>
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">SKU</label>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">{t.sku}</label>
                 <input 
                   type="text" 
                   name="sku" 
@@ -92,7 +118,7 @@ export default function AdminProductEdit() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Base Price ($)</label>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">{t.basePrice}</label>
                 <input 
                   type="number" 
                   name="base_price" 
@@ -106,13 +132,13 @@ export default function AdminProductEdit() {
 
           {/* Bilingual Content */}
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">Localization Content</h2>
+            <h2 className="text-xl font-bold text-white mb-6">{t.localizationContent}</h2>
             
             <div className="space-y-8">
               {/* English Section */}
-              <div className="p-5 border border-neutral-800/80 rounded-xl bg-neutral-950/50">
+              <div className="p-5 border border-neutral-800/80 rounded-xl bg-neutral-950/50" dir="ltr">
                 <div className="flex items-center mb-4">
-                  <span className="bg-blue-500/10 text-blue-400 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">English</span>
+                  <span className="bg-blue-500/10 text-blue-400 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">{t.english}</span>
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -141,7 +167,7 @@ export default function AdminProductEdit() {
               {/* Arabic Section */}
               <div className="p-5 border border-neutral-800/80 rounded-xl bg-neutral-950/50" dir="rtl">
                 <div className="flex items-center mb-4">
-                  <span className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">العربية</span>
+                  <span className="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">{t.arabic}</span>
                 </div>
                 <div className="space-y-4">
                   <div>
@@ -174,18 +200,18 @@ export default function AdminProductEdit() {
         {/* Sidebar settings */}
         <div className="space-y-6">
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-6">Status</h2>
+            <h2 className="text-xl font-bold text-white mb-6">{t.status}</h2>
             <div>
-              <label className="block text-sm font-medium text-neutral-400 mb-2">Visibility</label>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">{t.visibility}</label>
               <select 
                 name="status" 
                 value={formData.status} 
                 onChange={handleChange}
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors"
               >
-                <option value="active">Active (Published)</option>
-                <option value="draft">Draft (Hidden)</option>
-                <option value="archived">Archived</option>
+                <option value="active">{t.active}</option>
+                <option value="draft">{t.draft}</option>
+                <option value="archived">{t.archived}</option>
               </select>
             </div>
           </div>
