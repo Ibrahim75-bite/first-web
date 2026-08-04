@@ -23,8 +23,11 @@ const FULL_PRODUCT_SELECT = `
       tt.name AS tag_name
 `;
 
+/**
+ * Enterprise Product Repository supporting unified transaction client parameter (ARCH-01)
+ */
 export class ProductRepository {
-    async findById(id, lang) {
+    async findById(id, lang, db = pool) {
         const query = `
           ${FULL_PRODUCT_SELECT}
           FROM products p
@@ -43,18 +46,17 @@ export class ProductRepository {
           WHERE p.id = $2
           ORDER BY v.sku ASC, i.display_order ASC
         `;
-        const result = await pool.query(query, [lang, id]);
+        const result = await db.query(query, [lang, id]);
         return result.rows;
     }
 
-    async findBySlug(slug, lang) {
-        // Find product ID and actual language code for validation
+    async findBySlug(slug, lang, db = pool) {
         const lookupQuery = `
             SELECT product_id, language_code 
             FROM product_translations 
             WHERE slug = $1 LIMIT 1
         `;
-        const lookup = await pool.query(lookupQuery, [slug]);
+        const lookup = await db.query(lookupQuery, [slug]);
         if (lookup.rows.length === 0) return null;
 
         const { product_id, language_code: targetLang } = lookup.rows[0];
@@ -75,10 +77,9 @@ export class ProductRepository {
           ORDER BY v.sku ASC, i.display_order ASC
         `;
 
-        const result = await pool.query(query, [product_id, activeLang]);
+        const result = await db.query(query, [product_id, activeLang]);
         
         if (result.rows.length === 0) {
-            // Fallback to original slug translation language
             const fallbackQuery = `
               ${FULL_PRODUCT_SELECT}
               FROM products p
@@ -93,15 +94,15 @@ export class ProductRepository {
                 AND t.language_code = $3
               ORDER BY v.sku ASC, i.display_order ASC
             `;
-            const fallbackResult = await pool.query(fallbackQuery, [product_id, activeLang, targetLang]);
+            const fallbackResult = await db.query(fallbackQuery, [product_id, activeLang, targetLang]);
             return { rows: fallbackResult.rows, language: targetLang };
         }
 
         return { rows: result.rows, language: activeLang };
     }
 
-    async findAdminDetailsById(id) {
-        const productResult = await pool.query(
+    async findAdminDetailsById(id, db = pool) {
+        const productResult = await db.query(
             `SELECT id, model_code, weight, height FROM products WHERE id = $1`,
             [id]
         );
@@ -109,13 +110,13 @@ export class ProductRepository {
 
         const product = productResult.rows[0];
 
-        const translations = await pool.query(
+        const translations = await db.query(
             `SELECT language_code, name, material, description, slug, meta_title, meta_description
              FROM product_translations WHERE product_id = $1`,
             [id]
         );
 
-        const variants = await pool.query(
+        const variants = await db.query(
             `SELECT v.id, v.sku, v.color_name_en, v.color_name_ar, v.color_code,
                     v.min_order_qty
              FROM product_variants v WHERE v.product_id = $1
@@ -123,7 +124,7 @@ export class ProductRepository {
             [id]
         );
 
-        const images = await pool.query(
+        const images = await db.query(
             `SELECT i.id, i.variant_id, i.image_name, i.display_order
              FROM variant_images i
              JOIN product_variants v ON i.variant_id = v.id
@@ -132,7 +133,7 @@ export class ProductRepository {
             [id]
         );
 
-        const tags = await pool.query(
+        const tags = await db.query(
             `SELECT tg.id, tg.slug,
                     MAX(CASE WHEN tt.language_code = 'en' THEN tt.name END) AS name_en,
                     MAX(CASE WHEN tt.language_code = 'ar' THEN tt.name END) AS name_ar
@@ -153,7 +154,7 @@ export class ProductRepository {
         };
     }
 
-    async listIds({ lang, search, tagList, limit, offset }) {
+    async listIds({ lang, search, tagList, limit, offset }, db = pool) {
         const whereClause = this._buildWhereClause();
         const baseParams = [lang, search, tagList];
 
@@ -175,11 +176,11 @@ export class ProductRepository {
           LIMIT $4 OFFSET $5
         `;
 
-        const result = await pool.query(query, [...baseParams, limit, offset]);
+        const result = await db.query(query, [...baseParams, limit, offset]);
         return result.rows;
     }
 
-    async count({ lang, search, tagList }) {
+    async count({ lang, search, tagList }, db = pool) {
         const whereClause = this._buildWhereClause();
         const baseParams = [lang, search, tagList];
 
@@ -190,11 +191,11 @@ export class ProductRepository {
           ${whereClause}
         `;
 
-        const result = await pool.query(query, baseParams);
+        const result = await db.query(query, baseParams);
         return parseInt(result.rows[0].total, 10);
     }
 
-    async listFuzzyIds({ lang, search, limit, offset }) {
+    async listFuzzyIds({ lang, search, limit, offset }, db = pool) {
         const query = `
           SELECT DISTINCT p.id, p.model_code,
             similarity(t.name, $2) AS sim
@@ -205,11 +206,11 @@ export class ProductRepository {
           ORDER BY sim DESC, p.model_code ASC
           LIMIT $3 OFFSET $4
         `;
-        const result = await pool.query(query, [lang, search, limit, offset]);
+        const result = await db.query(query, [lang, search, limit, offset]);
         return result.rows;
     }
 
-    async getFullProductsForIds(lang, productIds) {
+    async getFullProductsForIds(lang, productIds, db = pool) {
         const query = `
           ${FULL_PRODUCT_SELECT}
           FROM products p
@@ -228,33 +229,33 @@ export class ProductRepository {
           WHERE p.id = ANY($2)
           ORDER BY p.model_code ASC, v.sku ASC, i.display_order ASC
         `;
-        const result = await pool.query(query, [lang, productIds]);
+        const result = await db.query(query, [lang, productIds]);
         return result.rows;
     }
 
-    async checkExists(client, id) {
+    async checkExists(id, db = pool) {
         const query = `SELECT 1 FROM products WHERE id = $1`;
-        const result = await client.query(query, [id]);
+        const result = await db.query(query, [id]);
         return result.rows.length > 0;
     }
 
-    async findByModelCode(client, modelCode) {
+    async findByModelCode(modelCode, db = pool) {
         const query = `SELECT id FROM products WHERE model_code = $1`;
-        const result = await client.query(query, [modelCode]);
+        const result = await db.query(query, [modelCode]);
         return result.rows[0] || null;
     }
 
-    async insert(client, { model_code, weight, height }) {
+    async insert({ model_code, weight, height }, db = pool) {
         const query = `
             INSERT INTO products (model_code, weight, height)
             VALUES ($1, $2, $3)
             RETURNING id
         `;
-        const result = await client.query(query, [model_code, weight, height]);
+        const result = await db.query(query, [model_code, weight, height]);
         return result.rows[0].id;
     }
 
-    async insertTranslations(client, { productId, name_en, name_ar, material_en, material_ar, description_en, description_ar, slugEn, slugAr }) {
+    async insertTranslations({ productId, name_en, name_ar, material_en, material_ar, description_en, description_ar, slugEn, slugAr }, db = pool) {
         const query = `
             INSERT INTO product_translations
             (product_id, language_code, name, material, description, slug)
@@ -262,10 +263,10 @@ export class ProductRepository {
             ($1, 'en', $2, $3, $4, $8),
             ($1, 'ar', $5, $6, $7, $9)
         `;
-        await client.query(query, [productId, name_en, material_en, description_en, name_ar, material_ar, description_ar, slugEn, slugAr]);
+        await db.query(query, [productId, name_en, material_en, description_en, name_ar, material_ar, description_ar, slugEn, slugAr]);
     }
 
-    async update(client, id, { model_code, weight, height }) {
+    async update(id, { model_code, weight, height }, db = pool) {
         const updates = [];
         const values = [];
         let idx = 1;
@@ -277,11 +278,11 @@ export class ProductRepository {
         if (updates.length > 0) {
             values.push(id);
             const query = `UPDATE products SET ${updates.join(", ")} WHERE id = $${idx}`;
-            await client.query(query, values);
+            await db.query(query, values);
         }
     }
 
-    async updateTranslation(client, id, lang, { name, material, description, slug, meta_title, meta_description }) {
+    async updateTranslation(id, lang, { name, material, description, slug, meta_title, meta_description }, db = pool) {
         const updates = [];
         const values = [];
         let idx = 1;
@@ -300,24 +301,24 @@ export class ProductRepository {
                 SET ${updates.join(", ")}
                 WHERE product_id = $${idx} AND language_code = $${idx + 1}
             `;
-            await client.query(query, values);
+            await db.query(query, values);
         }
     }
 
-    async delete(client, id) {
+    async delete(id, db = pool) {
         const query = `DELETE FROM products WHERE id = $1 RETURNING id, model_code`;
-        const result = await client.query(query, [id]);
+        const result = await db.query(query, [id]);
         return result.rows[0] || null;
     }
 
-    async getImagesForProduct(id) {
+    async getImagesForProduct(id, db = pool) {
         const query = `
           SELECT i.image_name
           FROM variant_images i
           JOIN product_variants v ON i.variant_id = v.id
           WHERE v.product_id = $1
         `;
-        const result = await pool.query(query, [id]);
+        const result = await db.query(query, [id]);
         return result.rows;
     }
 

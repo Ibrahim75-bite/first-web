@@ -5,12 +5,15 @@ export const requestContextStore = new AsyncLocalStorage();
 
 export const requestContextMiddleware = (req, res, next) => {
     // Generate unique Request ID if not provided
-    const requestId = req.headers["x-request-id"] || crypto.randomUUID();
+    const suppliedRequestId = req.headers["x-request-id"];
+    const requestId = typeof suppliedRequestId === "string" && /^[A-Za-z0-9_-]{8,128}$/.test(suppliedRequestId)
+        ? suppliedRequestId
+        : crypto.randomUUID();
     res.setHeader("X-Request-Id", requestId);
 
     const context = {
         requestId,
-        ip: req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown",
+        ip: req.ip || req.socket?.remoteAddress || "unknown",
         userAgent: req.headers["user-agent"] || "unknown",
         userId: null,
         username: null

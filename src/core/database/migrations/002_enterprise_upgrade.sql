@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: 001_enterprise_upgrade
+-- Migration: 002_enterprise_upgrade
 -- Purpose: Transform base Decorella schema to support enterprise CMS, Media Library, SEO/AEO/GEO, and audit trails.
 -- =============================================================================
 
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS variant_media (
 CREATE TABLE IF NOT EXISTS seo_metadata (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     entity_type VARCHAR(50) NOT NULL,
-    entity_id VARCHAR(100) NOT NULL, -- UUID or Int ID representation
+    entity_id VARCHAR(100) NOT NULL,
     language_code VARCHAR(10) NOT NULL,
     meta_title VARCHAR(150),
     meta_description VARCHAR(255),
@@ -244,8 +244,6 @@ CREATE TABLE IF NOT EXISTS search_analytics (
 -- =============================================================================
 -- 15. INDEX OPTIMIZATION
 -- =============================================================================
-
--- Foreign Keys Indexes
 CREATE INDEX IF NOT EXISTS idx_products_created_by ON products(created_by);
 CREATE INDEX IF NOT EXISTS idx_product_translations_product_id ON product_translations(product_id);
 CREATE INDEX IF NOT EXISTS idx_product_variants_product_id ON product_variants(product_id);
@@ -254,15 +252,12 @@ CREATE INDEX IF NOT EXISTS idx_variant_media_media_id ON variant_media(media_id)
 CREATE INDEX IF NOT EXISTS idx_product_categories_category_id ON product_categories(category_id);
 CREATE INDEX IF NOT EXISTS idx_product_tags_tag_id ON product_tags(tag_id);
 
--- Soft delete indices (Partial)
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(created_at) WHERE deleted_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_categories_active ON categories(display_order) WHERE deleted_at IS NULL;
 
--- Trigram gin indexes for fast autocomplete
 CREATE INDEX IF NOT EXISTS idx_product_trans_name_trgm ON product_translations USING gin (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_product_trans_slug_trgm ON product_translations USING gin (slug gin_trgm_ops);
 
--- Language Aware FTS indexes
 CREATE INDEX IF NOT EXISTS idx_product_fts_en ON product_translations 
 USING gin (to_tsvector('english', coalesce(name, '') || ' ' || coalesce(material, '') || ' ' || coalesce(description, '')))
 WHERE language_code = 'en';

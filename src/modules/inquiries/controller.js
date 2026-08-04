@@ -13,8 +13,8 @@ export class InquiryController {
     async list(req, res, next) {
         try {
             const { status, page = 1, limit = 20 } = req.query;
-            const parsedPage = parseInt(page, 10) || 1;
-            const parsedLimit = Math.min(100, parseInt(limit, 10) || 20);
+            const parsedPage = Math.max(1, parseInt(page, 10) || 1);
+            const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
 
             const result = await inquiryService.list({ status, page: parsedPage, limit: parsedLimit });
             res.json(result);

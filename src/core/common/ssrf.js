@@ -1,40 +1,11 @@
 import dns from "dns";
 import { promisify } from "util";
-import ipaddr from "ipaddr.js"; // Wait! Is ipaddr.js installed? Let's check dependencies or write native checks!
 
-// Promisify dns lookup
 const dnsLookup = promisify(dns.lookup);
 
-export function isPrivateIp(ipString) {
-    try {
-        if (!ipaddr.isValid(ipString)) {
-            return true; // If invalid, block by default
-        }
-        const addr = ipaddr.parse(ipString);
-        const range = addr.range();
+export function isPrivateIp(ip) {
+    if (!ip || typeof ip !== "string") return true;
 
-        const privateRanges = [
-            "private",      // RFC 1918 (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
-            "loopback",     // 127.0.0.1 etc.
-            "linkLocal",    // 169.254.0.0/16
-            "multicast",    // 224.0.0.0/4
-            "broadcast",    // 255.255.255.255
-            "unspecified",  // 0.0.0.0
-            "uniqueLocal",  // IPv6 FC00::/7
-            "ipv4Mapped"    // IPv4 mapped IPv6
-        ];
-
-        return privateRanges.includes(range);
-    } catch (err) {
-        return true; // Block on parser failure
-    }
-}
-
-// Since ipaddr.js might not be in package.json, let's write a robust regex/numeric block check
-// to avoid relying on extra dependencies! This is safe and self-contained!
-export function isPrivateIpNative(ip) {
-    if (!ip) return true;
-    
     // IPv4 check
     const ipv4Parts = ip.split(".");
     if (ipv4Parts.length === 4) {
@@ -51,7 +22,7 @@ export function isPrivateIpNative(ip) {
         if (first === 172 && second >= 16 && second <= 31) return true;
         // 192.168.0.0/16 (Private)
         if (first === 192 && second === 168) return true;
-        // 169.254.0.0/16 (Link Local)
+        // 169.254.0.0/16 (Link Local / Cloud Metadata Service)
         if (first === 169 && second === 254) return true;
         // 0.0.0.0 (Unspecified)
         if (first === 0) return true;
@@ -70,7 +41,6 @@ export function isPrivateIpNative(ip) {
     if (ipv6Lower.startsWith("fe80")) return true; // Link Local
     if (ipv6Lower.startsWith("ff00")) return true; // Multicast
 
-    // Default: block IPv6 that doesn't match standard public formats
     return true; 
 }
 
@@ -89,7 +59,7 @@ export async function validateUrlForSsrf(urlStr) {
         const lookup = await dnsLookup(hostname);
         const ip = lookup.address;
 
-        if (isPrivateIpNative(ip)) {
+        if (isPrivateIp(ip)) {
             throw new Error(`Access to private IP range is blocked: ${ip}`);
         }
 

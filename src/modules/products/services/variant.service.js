@@ -1,64 +1,86 @@
-import variantRepository from "../repositories/variant.repository.js";
-import cache from "../../../core/common/cache.js";
-import storageService from "../../../core/common/storage.js";
+import path from "path";
+import pool from "../../../core/database/db.js";
+import withTransaction from "../../../core/database/transaction.js";
+import defaultVariantRepository from "../repositories/variant.repository.js";
+import defaultCache from "../../../core/common/cache.js";
+import defaultStorageService from "../../../core/common/storage.js";
+import defaultAuditLogger from "../../../core/common/audit.js";
 import { validateAndProcessImage } from "../../../core/utils/image.js";
 import { NotFoundError, ValidationError } from "../../../core/common/error.js";
-import auditLogger from "../../../core/common/audit.js";
-import path from "path";
 import config from "../../../config/index.js";
 
+/**
+ * Enterprise Variant Service (ARCH-01, ARCH-02, ARCH-03, F-BUG-01 remediated)
+ */
 export class VariantService {
+    constructor({
+        variantRepo = defaultVariantRepository,
+        cacheService = defaultCache,
+        storage = defaultStorageService,
+        auditLog = defaultAuditLogger,
+        dbPool = pool
+    } = {}) {
+        this.variantRepo = variantRepo;
+        this.cache = cacheService;
+        this.storage = storage;
+        this.auditLogger = auditLog;
+        this.db = dbPool;
+    }
+
     async update(id, data) {
-        const existing = await variantRepository.findById(id);
+        const existing = await this.variantRepo.findById(id, this.db);
         if (!existing) {
             throw new NotFoundError(`Variant ${id} not found`);
         }
 
-        await variantRepository.update(id, data);
-        await auditLogger.logEvent("variant.update", `Variant ID: ${id}`, existing, data);
+        await this.variantRepo.update(id, data, this.db);
+        await this.auditLogger.logEvent("variant.update", `Variant ID: ${id}`, existing, data);
         
-        cache.clearProducts();
+        this.cache.clearProducts();
         return { message: `Variant ${id} updated successfully` };
     }
 
     async delete(id) {
-        const images = await variantRepository.getImagesForVariant(id);
-        const deleted = await variantRepository.delete(id);
+        return await withTransaction(async (tx) => {
+            const client = tx.client;
+            const images = await this.variantRepo.getImagesForVariant(id, client);
+            const deleted = await this.variantRepo.delete(id, client);
 
-        if (!deleted) {
-            throw new NotFoundError(`Variant ${id} not found`);
-        }
+            if (!deleted) {
+                throw new NotFoundError(`Variant ${id} not found`);
+            }
 
-        // Clean up image files
-        for (const img of images) {
-            const imageName = img.image_name;
-            const thumbName = `thumb_${path.parse(imageName).name}.webp`;
-            await storageService.delete(imageName, "uploads");
-            await storageService.delete(thumbName, "thumbnails");
-        }
+            // Post-commit hook (ARCH-02)
+            tx.onCommit(async () => {
+                for (const img of images) {
+                    const imageName = img.image_name;
+                    const thumbName = `thumb_${path.parse(imageName).name}.webp`;
+                    await this.storage.delete(imageName, "uploads");
+                    await this.storage.delete(thumbName, "thumbnails");
+                }
+            });
 
-        await auditLogger.logEvent("variant.delete", `Variant SKU: ${deleted.sku}`, deleted, null);
-
-        cache.clearProducts();
-        return {
-            message: `Variant ${deleted.sku} deleted`,
-            deleted_images: images.length
-        };
+            await this.auditLogger.logEvent("variant.delete", `Variant SKU: ${deleted.sku}`, deleted, null);
+            this.cache.clearProducts();
+            return {
+                message: `Variant ${deleted.sku} deleted`,
+                deleted_images: images.length
+            };
+        });
     }
 
     async addImage(variantId, data) {
         const { image_name, display_order = 1 } = data;
 
-        // Generate thumbnail if file exists on disk
         let thumbnailName = null;
-        if (storageService.exists(image_name, "uploads")) {
+        if (this.storage.exists(image_name, "uploads")) {
             thumbnailName = await validateAndProcessImage(image_name);
         }
 
-        await variantRepository.insertImage(variantId, image_name, display_order);
-        await auditLogger.logEvent("variant.image_add", `Variant ID: ${variantId}, Image: ${image_name}`);
+        await this.variantRepo.insertImage(variantId, image_name, display_order, this.db);
+        await this.auditLogger.logEvent("variant.image_add", `Variant ID: ${variantId}, Image: ${image_name}`);
         
-        cache.clearProducts();
+        this.cache.clearProducts();
 
         return {
             message: "Image added successfully",
@@ -70,48 +92,65 @@ export class VariantService {
     }
 
     async uploadImage(variantId, file, displayOrder = 1) {
-        const variantCheck = await variantRepository.findById(variantId);
+        // Pre-validation before file processing (F-BUG-01 remediated)
+        const variantCheck = await this.variantRepo.findById(variantId, this.db);
         if (!variantCheck) {
-            // Clean up uploaded file
-            await storageService.delete(file.filename, "uploads");
+            if (file && file.filename) {
+                await this.storage.delete(file.filename, "uploads");
+            }
             throw new NotFoundError(`Variant ${variantId} not found`);
         }
 
         const imageName = file.filename;
-        const thumbnailName = await validateAndProcessImage(imageName);
+        let thumbnailName = null;
 
-        await variantRepository.insertImage(variantId, imageName, displayOrder);
-        await auditLogger.logEvent("variant.image_upload", `Variant SKU: ${variantCheck.sku}, Image: ${imageName}`);
-        
-        cache.clearProducts();
+        try {
+            thumbnailName = await validateAndProcessImage(imageName);
+            await this.variantRepo.insertImage(variantId, imageName, displayOrder, this.db);
+            await this.auditLogger.logEvent("variant.image_upload", `Variant SKU: ${variantCheck.sku}, Image: ${imageName}`);
+            
+            this.cache.clearProducts();
 
-        return {
-            message: "Image uploaded successfully",
-            image_name: imageName,
-            image_url: `${config.baseUrl}/images/${imageName}`,
-            thumbnail_url: thumbnailName
-                ? `${config.baseUrl}/images/thumbnails/${thumbnailName}`
-                : null,
-            display_order: displayOrder
-        };
+            return {
+                message: "Image uploaded successfully",
+                image_name: imageName,
+                image_url: `${config.baseUrl}/images/${imageName}`,
+                thumbnail_url: thumbnailName
+                    ? `${config.baseUrl}/images/thumbnails/${thumbnailName}`
+                    : null,
+                display_order: displayOrder
+            };
+        } catch (err) {
+            // Clean up disk file on failure
+            await this.storage.delete(imageName, "uploads");
+            if (thumbnailName) {
+                await this.storage.delete(thumbnailName, "thumbnails");
+            }
+            throw err;
+        }
     }
 
     async deleteImage(id) {
-        const deleted = await variantRepository.deleteImage(id);
-        if (!deleted) {
-            throw new NotFoundError(`Image ${id} not found`);
-        }
+        return await withTransaction(async (tx) => {
+            const client = tx.client;
+            const deleted = await this.variantRepo.deleteImage(id, client);
+            if (!deleted) {
+                throw new NotFoundError(`Image ${id} not found`);
+            }
 
-        const imageName = deleted.image_name;
-        const thumbName = `thumb_${path.parse(imageName).name}.webp`;
+            const imageName = deleted.image_name;
+            const thumbName = `thumb_${path.parse(imageName).name}.webp`;
 
-        await storageService.delete(imageName, "uploads");
-        await storageService.delete(thumbName, "thumbnails");
+            // Post-commit execution (ARCH-02)
+            tx.onCommit(async () => {
+                await this.storage.delete(imageName, "uploads");
+                await this.storage.delete(thumbName, "thumbnails");
+            });
 
-        await auditLogger.logEvent("variant.image_delete", `Image ID: ${id}, Name: ${imageName}`);
-
-        cache.clearProducts();
-        return { message: `Image "${imageName}" deleted` };
+            await this.auditLogger.logEvent("variant.image_delete", `Image ID: ${id}, Name: ${imageName}`);
+            this.cache.clearProducts();
+            return { message: `Image "${imageName}" deleted` };
+        });
     }
 }
 

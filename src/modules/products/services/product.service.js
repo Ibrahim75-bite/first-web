@@ -1,22 +1,42 @@
+import path from "path";
 import pool from "../../../core/database/db.js";
-import productRepository from "../repositories/product.repository.js";
-import variantRepository from "../repositories/variant.repository.js";
-import cache from "../../../core/common/cache.js";
+import withTransaction from "../../../core/database/transaction.js";
+import defaultProductRepository from "../repositories/product.repository.js";
+import defaultVariantRepository from "../repositories/variant.repository.js";
+import defaultCache from "../../../core/common/cache.js";
+import defaultStorageService from "../../../core/common/storage.js";
+import defaultAuditLogger from "../../../core/common/audit.js";
 import { generateUniqueSlug } from "../../../core/utils/slug.js";
 import { NotFoundError, ValidationError } from "../../../core/common/error.js";
-import storageService from "../../../core/common/storage.js";
-import auditLogger from "../../../core/common/audit.js";
-import path from "path";
 import config from "../../../config/index.js";
 
+/**
+ * Enterprise Product Domain Service (ARCH-01, ARCH-02, ARCH-03 remediated)
+ */
 export class ProductService {
+    constructor({
+        productRepo = defaultProductRepository,
+        variantRepo = defaultVariantRepository,
+        cacheService = defaultCache,
+        storage = defaultStorageService,
+        auditLog = defaultAuditLogger,
+        dbPool = pool
+    } = {}) {
+        this.productRepo = productRepo;
+        this.variantRepo = variantRepo;
+        this.cache = cacheService;
+        this.storage = storage;
+        this.auditLogger = auditLog;
+        this.db = dbPool;
+    }
+
     buildImageObject(imageName) {
         const imageUrl = `${config.baseUrl}/images/${imageName}`;
         const thumbName = `thumb_${path.parse(imageName).name}.webp`;
-        const thumbnailUrl = `${config.baseUrl}/images/thumbnails/${thumbName}`;
+        const thumbnailUrl = `${config.baseUrl}/thumbnails/${thumbName}`;
         return {
             url: imageUrl,
-            thumbnail: storageService.exists(thumbName, "thumbnails") ? thumbnailUrl : null
+            thumbnail: this.storage.exists(thumbName, "thumbnails") ? thumbnailUrl : null
         };
     }
 
@@ -42,7 +62,6 @@ export class ProductService {
         const imagesSeen = {};
 
         for (const row of rows) {
-            // Tags
             if (row.tag_slug) {
                 product.tags[row.tag_slug] = {
                     slug: row.tag_slug,
@@ -50,7 +69,6 @@ export class ProductService {
                 };
             }
 
-            // Variants
             if (row.variant_id) {
                 if (!product.variants[row.variant_id]) {
                     product.variants[row.variant_id] = {
@@ -83,21 +101,21 @@ export class ProductService {
 
     async getBySlug(slug, lang) {
         const cacheKey = `slug:${slug}:${lang}`;
-        const cached = cache.get(cacheKey);
+        const cached = this.cache.get(cacheKey);
         if (cached) return cached;
 
-        const result = await productRepository.findBySlug(slug, lang);
+        const result = await this.productRepo.findBySlug(slug, lang, this.db);
         if (!result) {
             throw new NotFoundError(`Product with slug "${slug}" not found`);
         }
 
         const product = this.groupRowsIntoProduct(result.rows, result.language);
-        cache.set(cacheKey, product);
+        this.cache.set(cacheKey, product);
         return product;
     }
 
     async getById(id, lang) {
-        const rows = await productRepository.findById(id, lang);
+        const rows = await this.productRepo.findById(id, lang, this.db);
         if (rows.length === 0) {
             throw new NotFoundError(`Product ${id} not found`);
         }
@@ -105,7 +123,7 @@ export class ProductService {
     }
 
     async getAdminDetails(id) {
-        const details = await productRepository.findAdminDetailsById(id);
+        const details = await this.productRepo.findAdminDetailsById(id, this.db);
         if (!details) {
             throw new NotFoundError(`Product ${id} not found`);
         }
@@ -147,22 +165,21 @@ export class ProductService {
         const tagList = effectiveTags ? effectiveTags.split(",").map(t => t.trim().toLowerCase()).filter(Boolean) : null;
 
         const cacheKey = `products:${lang}:${search}:${effectiveTags}:${page}:${limit}`;
-        const cached = cache.get(cacheKey);
+        const cached = this.cache.get(cacheKey);
         if (cached) return cached;
 
         const offset = (page - 1) * limit;
         
-        let idRows = await productRepository.listIds({ lang, search, tagList, limit, offset });
-        let total = await productRepository.count({ lang, search, tagList });
+        let idRows = await this.productRepo.listIds({ lang, search, tagList, limit, offset }, this.db);
+        let total = await this.productRepo.count({ lang, search, tagList }, this.db);
 
-        // Fuzzy search fallback
         if (idRows.length === 0 && search) {
-            idRows = await productRepository.listFuzzyIds({ lang, search, limit, offset });
+            idRows = await this.productRepo.listFuzzyIds({ lang, search, limit, offset }, this.db);
         }
 
         if (idRows.length === 0) {
             const emptyResponse = { page, limit, total, totalPages: Math.ceil(total / limit), data: [] };
-            cache.set(cacheKey, emptyResponse);
+            this.cache.set(cacheKey, emptyResponse);
             return emptyResponse;
         }
 
@@ -170,7 +187,7 @@ export class ProductService {
         const idOrderMap = {};
         productIds.forEach((id, idx) => { idOrderMap[id] = idx; });
 
-        const rows = await productRepository.getFullProductsForIds(lang, productIds);
+        const rows = await this.productRepo.getFullProductsForIds(lang, productIds, this.db);
         
         const productsMap = {};
         for (const row of rows) {
@@ -185,29 +202,26 @@ export class ProductService {
             .sort((a, b) => idOrderMap[a.product_id] - idOrderMap[b.product_id]);
 
         const response = { page, limit, total, totalPages: Math.ceil(total / limit), data: finalProducts };
-        cache.set(cacheKey, response);
+        this.cache.set(cacheKey, response);
         return response;
     }
 
-    async create(data) {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
-
-            let product = await productRepository.findByModelCode(client, data.model_code);
+    async create(data, clientOverride = null) {
+        const executeLogic = async (client) => {
+            let product = await this.productRepo.findByModelCode(data.model_code, client);
             let productId;
 
             if (!product) {
-                productId = await productRepository.insert(client, {
+                productId = await this.productRepo.insert({
                     model_code: data.model_code,
                     weight: data.weight,
                     height: data.height
-                });
+                }, client);
 
                 const slugEn = await generateUniqueSlug(client, data.name_en, "en");
                 const slugAr = await generateUniqueSlug(client, data.name_ar, "ar");
 
-                await productRepository.insertTranslations(client, {
+                await this.productRepo.insertTranslations({
                     productId,
                     name_en: data.name_en,
                     material_en: data.material_en,
@@ -217,59 +231,55 @@ export class ProductService {
                     description_ar: data.description_ar,
                     slugEn,
                     slugAr
-                });
+                }, client);
             } else {
                 productId = product.id;
             }
 
-            const variantCheck = await variantRepository.findBySku(client, data.sku);
+            const variantCheck = await this.variantRepo.findBySku(data.sku, client);
 
             if (!variantCheck) {
-                // Enforce max 4 variants per product
-                const variantCount = await variantRepository.countByProductId(client, productId);
+                const variantCount = await this.variantRepo.countByProductId(productId, client);
                 if (variantCount >= 4) {
                     throw new ValidationError(`Product ${data.model_code} already has 4 variants (maximum reached)`);
                 }
 
-                await variantRepository.insert(client, {
+                await this.variantRepo.insert({
                     productId,
                     sku: data.sku,
                     color_en: data.color_en,
                     color_ar: data.color_ar
-                });
+                }, client);
             }
 
-            await client.query("COMMIT");
-            await auditLogger.logEvent("product.create", `Model SKU: ${data.sku}`, null, data);
-            
-            cache.clearProducts();
-            return { message: "Product/Variant processed successfully" };
-        } catch (err) {
-            await client.query("ROLLBACK");
-            throw err;
-        } finally {
-            client.release();
+            await this.auditLogger.logEvent("product.create", `Model SKU: ${data.sku}`, null, data);
+            this.cache.clearProducts();
+            return { message: "Product/Variant processed successfully", productId };
+        };
+
+        if (clientOverride) {
+            return await executeLogic(clientOverride);
         }
+
+        return await withTransaction(async (tx) => {
+            return await executeLogic(tx.client);
+        });
     }
 
     async update(id, data) {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
-
-            const exists = await productRepository.checkExists(client, id);
+        return await withTransaction(async (tx) => {
+            const client = tx.client;
+            const exists = await this.productRepo.checkExists(id, client);
             if (!exists) {
                 throw new NotFoundError(`Product ${id} not found`);
             }
 
-            // Update main product details
-            await productRepository.update(client, id, {
+            await this.productRepo.update(id, {
                 model_code: data.model_code,
                 weight: data.weight,
                 height: data.height
-            });
+            }, client);
 
-            // Update English translation
             if (
                 data.name_en !== undefined ||
                 data.material_en !== undefined ||
@@ -281,17 +291,16 @@ export class ProductService {
                 if (data.name_en !== undefined) {
                     slugEn = await generateUniqueSlug(client, data.name_en, "en");
                 }
-                await productRepository.updateTranslation(client, id, "en", {
+                await this.productRepo.updateTranslation(id, "en", {
                     name: data.name_en,
                     material: data.material_en,
                     description: data.description_en,
                     meta_title: data.meta_title_en,
                     meta_description: data.meta_description_en,
                     slug: slugEn
-                });
+                }, client);
             }
 
-            // Update Arabic translation
             if (
                 data.name_ar !== undefined ||
                 data.material_ar !== undefined ||
@@ -303,64 +312,49 @@ export class ProductService {
                 if (data.name_ar !== undefined) {
                     slugAr = await generateUniqueSlug(client, data.name_ar, "ar");
                 }
-                await productRepository.updateTranslation(client, id, "ar", {
+                await this.productRepo.updateTranslation(id, "ar", {
                     name: data.name_ar,
                     material: data.material_ar,
                     description: data.description_ar,
                     meta_title: data.meta_title_ar,
                     meta_description: data.meta_description_ar,
                     slug: slugAr
-                });
+                }, client);
             }
 
-            await client.query("COMMIT");
-            await auditLogger.logEvent("product.update", `Product ID: ${id}`, null, data);
-            
-            cache.clearProducts();
+            await this.auditLogger.logEvent("product.update", `Product ID: ${id}`, null, data);
+            this.cache.clearProducts();
             return { message: `Product ${id} updated successfully` };
-        } catch (err) {
-            await client.query("ROLLBACK");
-            throw err;
-        } finally {
-            client.release();
-        }
+        });
     }
 
     async delete(id) {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
+        return await withTransaction(async (tx) => {
+            const client = tx.client;
+            const images = await this.productRepo.getImagesForProduct(id, client);
 
-            // Gather all variant images to clean up
-            const images = await productRepository.getImagesForProduct(id);
-
-            const deleted = await productRepository.delete(client, id);
+            const deleted = await this.productRepo.delete(id, client);
             if (!deleted) {
                 throw new NotFoundError(`Product ${id} not found`);
             }
 
-            // Delete files off storage
-            for (const img of images) {
-                const imageName = img.image_name;
-                const thumbName = `thumb_${path.parse(imageName).name}.webp`;
-                await storageService.delete(imageName, "uploads");
-                await storageService.delete(thumbName, "thumbnails");
-            }
+            // Post-commit deferred execution queue (ARCH-02)
+            tx.onCommit(async () => {
+                for (const img of images) {
+                    const imageName = img.image_name;
+                    const thumbName = `thumb_${path.parse(imageName).name}.webp`;
+                    await this.storage.delete(imageName, "uploads");
+                    await this.storage.delete(thumbName, "thumbnails");
+                }
+            });
 
-            await client.query("COMMIT");
-            await auditLogger.logEvent("product.delete", `Product ID: ${id}`, deleted, null);
-            
-            cache.clearProducts();
+            await this.auditLogger.logEvent("product.delete", `Product ID: ${id}`, deleted, null);
+            this.cache.clearProducts();
             return {
                 message: `Product ${deleted.model_code} and all related data deleted`,
                 deleted_images: images.length
             };
-        } catch (err) {
-            await client.query("ROLLBACK");
-            throw err;
-        } finally {
-            client.release();
-        }
+        });
     }
 }
 

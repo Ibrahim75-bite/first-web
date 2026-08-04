@@ -1,9 +1,13 @@
 import authService from "./service.js";
 import config from "../../config/index.js";
+import { AuthenticationError } from "../../core/common/error.js";
 
 export class AuthController {
     async login(req, res, next) {
-        const { username, password } = req.body;
+        const { username, password } = req.body || {};
+        if (!username || !password) {
+            return next(new AuthenticationError("Username and password are required"));
+        }
         try {
             const data = await authService.login(username, password);
 
@@ -26,9 +30,12 @@ export class AuthController {
     }
 
     async refresh(req, res, next) {
-        // Read refresh token from cookie or request body
-        const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
         try {
+            const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+            if (!refreshToken) {
+                return next(new AuthenticationError("Refresh token required"));
+            }
+
             const data = await authService.refresh(refreshToken);
 
             res.cookie("refreshToken", data.refreshToken, {
@@ -47,8 +54,13 @@ export class AuthController {
     }
 
     async logout(req, res, next) {
-        const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
         try {
+            const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+            if (!refreshToken) {
+                res.clearCookie("refreshToken");
+                return res.json({ message: "Logged out successfully" });
+            }
+
             await authService.logout(refreshToken);
             res.clearCookie("refreshToken");
             res.json({ message: "Logged out successfully" });

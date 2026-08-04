@@ -1,27 +1,64 @@
-import inquiryRepository from "./repository.js";
+import pool from "../../core/database/db.js";
+import defaultInquiryRepository from "./repository.js";
 import { NotFoundError, ValidationError } from "../../core/common/error.js";
 
+/**
+ * Enterprise Inquiry Service (ARCH-01, ARCH-03, ARCH-07 remediated)
+ */
 export class InquiryService {
-    async submit(data) {
-        const { items } = data;
-        const skus = items.map(i => i.sku);
+    constructor({
+        inquiryRepo = defaultInquiryRepository,
+        dbPool = pool
+    } = {}) {
+        this.inquiryRepo = inquiryRepo;
+        this.db = dbPool;
+    }
 
-        const dbSkus = await inquiryRepository.checkSkusExist(skus);
-        const validSkus = new Set(dbSkus);
-        const invalidSkus = skus.filter(s => !validSkus.has(s));
+    async submit(data) {
+        const { items, customer_name, customer_email } = data;
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            throw new ValidationError("At least one item is required in the inquiry");
+        }
+
+        const skus = items.map(i => i.sku);
+        const variantRows = await this.inquiryRepo.checkSkusExist(skus, this.db);
+        const variantMap = new Map(variantRows.map(r => [r.sku, r]));
+
+        const invalidSkus = [];
+        const moqFailures = [];
+
+        for (const item of items) {
+            const variant = variantMap.get(item.sku);
+            if (!variant) {
+                invalidSkus.push(item.sku);
+            } else {
+                const minQty = variant.min_order_qty || 1;
+                if (item.quantity < minQty) {
+                    moqFailures.push({
+                        sku: item.sku,
+                        requested_quantity: item.quantity,
+                        min_order_qty: minQty
+                    });
+                }
+            }
+        }
 
         if (invalidSkus.length > 0) {
             throw new ValidationError("Invalid SKUs provided", { invalid_skus: invalidSkus });
         }
 
-        const inserted = await inquiryRepository.insert({
-            customer_name: data.customer_name,
-            customer_email: data.customer_email,
+        if (moqFailures.length > 0) {
+            throw new ValidationError("Minimum Order Quantity (MOQ) requirement not met for item(s)", { moq_failures: moqFailures });
+        }
+
+        const inserted = await this.inquiryRepo.insert({
+            customer_name,
+            customer_email,
             customer_phone: data.customer_phone || null,
             customer_company: data.customer_company || null,
             message: data.message || null,
-            items: data.items
-        });
+            items
+        }, this.db);
 
         return {
             message: "Inquiry submitted successfully. We will get back to you soon.",
@@ -31,24 +68,26 @@ export class InquiryService {
     }
 
     async list({ status, page, limit }) {
-        const offset = (Math.max(1, page) - 1) * limit;
+        const safePage = Math.max(1, parseInt(page, 10) || 1);
+        const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+        const offset = (safePage - 1) * safeLimit;
 
         const [inquiries, total] = await Promise.all([
-            inquiryRepository.list({ status, limit, offset }),
-            inquiryRepository.count({ status })
+            this.inquiryRepo.list({ status, limit: safeLimit, offset }, this.db),
+            this.inquiryRepo.count({ status }, this.db)
         ]);
 
         return {
-            page,
-            limit,
+            page: safePage,
+            limit: safeLimit,
             total,
-            totalPages: Math.ceil(total / limit),
+            totalPages: Math.ceil(total / safeLimit),
             data: inquiries
         };
     }
 
     async updateStatus(id, status) {
-        const updated = await inquiryRepository.updateStatus(id, status);
+        const updated = await this.inquiryRepo.updateStatus(id, status, this.db);
         if (!updated) {
             throw new NotFoundError(`Inquiry ${id} not found`);
         }

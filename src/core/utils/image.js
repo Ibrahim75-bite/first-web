@@ -6,7 +6,14 @@ import { ValidationError } from "../common/error.js";
 
 const MAX_DIMENSION = 4096; // 4K max resolution to prevent decompression bombs
 
+function assertSafeImageName(imageName) {
+    if (typeof imageName !== "string" || !/^[0-9a-f-]{36}\.(?:jpe?g|png|webp)$/i.test(imageName)) {
+        throw new ValidationError("Invalid image identifier");
+    }
+}
+
 export async function validateAndProcessImage(imageName) {
+    assertSafeImageName(imageName);
     const inputPath = storageService.getLocalPath(imageName, "uploads");
     const thumbName = `thumb_${path.parse(imageName).name}.webp`;
     const thumbPath = storageService.getLocalPath(thumbName, "thumbnails");
@@ -33,7 +40,6 @@ export async function validateAndProcessImage(imageName) {
         
         await sharp(inputPath)
             .rotate() // Auto-rotate based on EXIF orientation before stripping it
-            .keepMetadata(false) // Strip all metadata headers (EXIF, GPS, etc.)
             .toFile(tempSanitizedPath);
 
         // Replace original upload with the fully sanitized version
@@ -68,3 +74,5 @@ export async function processImage(imageName) {
         return null;
     }
 }
+
+export { assertSafeImageName };

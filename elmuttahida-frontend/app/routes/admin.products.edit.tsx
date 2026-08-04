@@ -23,6 +23,7 @@ export default function AdminProductEdit() {
     sku: "",
     base_price: "",
     status: "active",
+    in_stock: true,
     // English Content
     name_en: "",
     description_en: "",
@@ -31,7 +32,7 @@ export default function AdminProductEdit() {
     description_ar: "",
     
     // New Options
-    item_type: "single", // "single" or "bundle"
+    item_type: "single", // "single", "bundle_three", or "bundle"
     height: "",
     width: "",
     depth: "",
@@ -40,6 +41,23 @@ export default function AdminProductEdit() {
     package_depth: "",
     single_weight: "",
     bundle_weight: "",
+
+    // Individual Bundle of Three Items measurements & weight
+    item1_height: "",
+    item1_width: "",
+    item1_depth: "",
+    item1_weight: "",
+
+    item2_height: "",
+    item2_width: "",
+    item2_depth: "",
+    item2_weight: "",
+
+    item3_height: "",
+    item3_width: "",
+    item3_depth: "",
+    item3_weight: "",
+
     images: [] as string[],
   });
 
@@ -65,10 +83,16 @@ export default function AdminProductEdit() {
     archived: isAr ? "مؤرشف" : "Archived",
     loading: isAr ? "جاري تحميل تفاصيل المنتج..." : "Loading product details...",
 
+    // Stock Status
+    inStockStatus: isAr ? "حالة المخزون" : "Stock Status",
+    inStock: isAr ? "متوفر في المخزون" : "In Stock",
+    outOfStock: isAr ? "نفذ من المخزون" : "Out of Stock",
+
     // Bundle / Options Translations
     productType: isAr ? "نوع المنتج" : "Product Type",
-    singleItem: isAr ? "قطعة فردية (Single)" : "Single Item",
-    bundleSet: isAr ? "مجموعة / طقم (Bundle)" : "Bundle / Set",
+    singleItem: isAr ? "قطعة فردية" : "Single Item",
+    bundleThree: isAr ? "طقم من 3 قطع (Bundle of Three)" : "Bundle of Three",
+    bundleSet: isAr ? "مجموعة / طقم آخر" : "Bundle / Set (Other)",
     dimensions: isAr ? "المقاسات والأبعاد (سم)" : "Dimensions & Measurements (cm)",
     height: isAr ? "الارتفاع" : "Height",
     width: isAr ? "العرض" : "Width",
@@ -80,6 +104,12 @@ export default function AdminProductEdit() {
     weights: isAr ? "الأوزان (كجم)" : "Weights (kg)",
     singleWeight: isAr ? "وزن القطعة الفردية" : "Single Item Weight",
     bundleWeight: isAr ? "وزن المجموعة / الطرد" : "Packaged / Bundle Weight",
+
+    // Bundle of Three headers
+    firstItem: isAr ? "أبعاد ووزن القطعة الأولى (كبيرة)" : "First Item Dimensions & Weight (Large)",
+    secondItem: isAr ? "أبعاد ووزن القطعة الثانية (وسط)" : "Second Item Dimensions & Weight (Medium)",
+    thirdItem: isAr ? "أبعاد ووزن القطعة الثالثة (صغيرة)" : "Third Item Dimensions & Weight (Small)",
+
     productImages: isAr ? "صور المنتج" : "Product Images",
     addImageUrl: isAr ? "إضافة رابط" : "Add URL",
     enterImageUrl: isAr ? "أدخل رابط الصورة..." : "Enter image URL...",
@@ -90,24 +120,52 @@ export default function AdminProductEdit() {
   useEffect(() => {
     // Mocking initial data for the dashboard UI demonstration
     setTimeout(() => {
+      const sku = "U0002-PN05";
+      let localMeta = {} as any;
+      if (typeof window !== "undefined") {
+        const savedMeta = localStorage.getItem(`product_meta_${sku}`);
+        if (savedMeta) {
+          localMeta = JSON.parse(savedMeta);
+        }
+      }
+
       setFormData({
-        sku: "U0002-PN05",
+        sku: sku,
         base_price: "499.00",
         status: "active",
+        in_stock: localMeta.in_stock !== undefined ? localMeta.in_stock : true,
         name_en: "Classic Porcelain Vase",
         description_en: "A beautiful hand-crafted porcelain vase with golden trim.",
         name_ar: "مزهرية بورسلين كلاسيكية",
         description_ar: "مزهرية بورسلين جميلة مصنوعة يدوياً مع حواف ذهبية.",
         
-        item_type: "single",
-        height: "28",
-        width: "15",
-        depth: "15",
-        package_height: "",
-        package_width: "",
-        package_depth: "",
-        single_weight: "1.2",
-        bundle_weight: "",
+        item_type: localMeta.item_type || "single",
+        height: localMeta.height || "28",
+        width: localMeta.width || "15",
+        depth: localMeta.depth || "15",
+        
+        package_height: localMeta.package_height || "",
+        package_width: localMeta.package_width || "",
+        package_depth: localMeta.package_depth || "",
+        
+        single_weight: localMeta.single_weight || "1.2",
+        bundle_weight: localMeta.bundle_weight || "",
+
+        item1_height: localMeta.item1_height || "28",
+        item1_width: localMeta.item1_width || "15",
+        item1_depth: localMeta.item1_depth || "15",
+        item1_weight: localMeta.item1_weight || "1.2",
+
+        item2_height: localMeta.item2_height || "24",
+        item2_width: localMeta.item2_width || "13",
+        item2_depth: localMeta.item2_depth || "13",
+        item2_weight: localMeta.item2_weight || "0.9",
+
+        item3_height: localMeta.item3_height || "20",
+        item3_width: localMeta.item3_width || "11",
+        item3_depth: localMeta.item3_depth || "11",
+        item3_weight: localMeta.item3_weight || "0.7",
+
         images: [
           "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=600",
           "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600"
@@ -148,6 +206,33 @@ export default function AdminProductEdit() {
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setSaving(true);
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`product_meta_${formData.sku}`, JSON.stringify({
+        in_stock: formData.in_stock,
+        item_type: formData.item_type,
+        height: formData.height,
+        width: formData.width,
+        depth: formData.depth,
+        package_height: formData.package_height,
+        package_width: formData.package_width,
+        package_depth: formData.package_depth,
+        single_weight: formData.single_weight,
+        bundle_weight: formData.bundle_weight,
+        item1_height: formData.item1_height,
+        item1_width: formData.item1_width,
+        item1_depth: formData.item1_depth,
+        item1_weight: formData.item1_weight,
+        item2_height: formData.item2_height,
+        item2_width: formData.item2_width,
+        item2_depth: formData.item2_depth,
+        item2_weight: formData.item2_weight,
+        item3_height: formData.item3_height,
+        item3_width: formData.item3_width,
+        item3_depth: formData.item3_depth,
+        item3_weight: formData.item3_weight,
+      }));
+    }
     
     // Simulate save
     setTimeout(() => {
@@ -218,50 +303,228 @@ export default function AdminProductEdit() {
                   className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors"
                 >
                   <option value="single">{t.singleItem}</option>
+                  <option value="bundle_three">{t.bundleThree}</option>
                   <option value="bundle">{t.bundleSet}</option>
                 </select>
               </div>
             </div>
 
-            {/* Sizes & Measurements */}
-            <div className="border-t border-neutral-800/80 pt-6">
-              <h3 className="text-base font-bold text-white mb-4">{t.dimensions}</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs text-neutral-400 mb-1">{t.height}</label>
-                  <input 
-                    type="number" 
-                    name="height" 
-                    value={formData.height} 
-                    onChange={handleChange}
-                    placeholder="cm"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-neutral-400 mb-1">{t.width}</label>
-                  <input 
-                    type="number" 
-                    name="width" 
-                    value={formData.width} 
-                    onChange={handleChange}
-                    placeholder="cm"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-neutral-400 mb-1">{t.depth}</label>
-                  <input 
-                    type="number" 
-                    name="depth" 
-                    value={formData.depth} 
-                    onChange={handleChange}
-                    placeholder="cm"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
-                  />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 border-t border-neutral-800/80 pt-6">
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">{t.inStockStatus}</label>
+                <select 
+                  name="in_stock" 
+                  value={formData.in_stock ? "true" : "false"} 
+                  onChange={(e) => setFormData(prev => ({ ...prev, in_stock: e.target.value === "true" }))}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                >
+                  <option value="true">{t.inStock}</option>
+                  <option value="false">{t.outOfStock}</option>
+                </select>
               </div>
             </div>
+
+            {/* Sizes & Measurements (Single / Bundle Set choice) */}
+            {formData.item_type === "single" && (
+              <div className="border-t border-neutral-800/80 pt-6">
+                <h3 className="text-base font-bold text-white mb-4">{t.dimensions}</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs text-neutral-400 mb-1">{t.height}</label>
+                    <input 
+                      type="number" 
+                      name="height" 
+                      value={formData.height} 
+                      onChange={handleChange}
+                      placeholder="cm"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-neutral-400 mb-1">{t.width}</label>
+                    <input 
+                      type="number" 
+                      name="width" 
+                      value={formData.width} 
+                      onChange={handleChange}
+                      placeholder="cm"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-neutral-400 mb-1">{t.depth}</label>
+                    <input 
+                      type="number" 
+                      name="depth" 
+                      value={formData.depth} 
+                      onChange={handleChange}
+                      placeholder="cm"
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bundle of Three specific layout */}
+            {formData.item_type === "bundle_three" && (
+              <div className="border-t border-neutral-800/80 pt-6 space-y-6">
+                <h3 className="text-base font-bold text-white mb-2">{isAr ? "تفاصيل المقاسات والأوزان للقطع الثلاث" : "Dimensions & Weights of the Three Bundle Items"}</h3>
+                
+                {/* Item 1 */}
+                <div className="p-4 bg-neutral-950/40 border border-neutral-800/60 rounded-xl">
+                  <h4 className="text-sm font-semibold text-amber-500 mb-3">{t.firstItem}</h4>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.height}</label>
+                      <input 
+                        type="number" 
+                        name="item1_height" 
+                        value={formData.item1_height} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.width}</label>
+                      <input 
+                        type="number" 
+                        name="item1_width" 
+                        value={formData.item1_width} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.depth}</label>
+                      <input 
+                        type="number" 
+                        name="item1_depth" 
+                        value={formData.item1_depth} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{isAr ? "الوزن (كجم)" : "Weight (kg)"}</label>
+                      <input 
+                        type="number" 
+                        name="item1_weight" 
+                        value={formData.item1_weight} 
+                        onChange={handleChange}
+                        placeholder="kg"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Item 2 */}
+                <div className="p-4 bg-neutral-950/40 border border-neutral-800/60 rounded-xl">
+                  <h4 className="text-sm font-semibold text-amber-500 mb-3">{t.secondItem}</h4>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.height}</label>
+                      <input 
+                        type="number" 
+                        name="item2_height" 
+                        value={formData.item2_height} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.width}</label>
+                      <input 
+                        type="number" 
+                        name="item2_width" 
+                        value={formData.item2_width} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.depth}</label>
+                      <input 
+                        type="number" 
+                        name="item2_depth" 
+                        value={formData.item2_depth} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{isAr ? "الوزن (كجم)" : "Weight (kg)"}</label>
+                      <input 
+                        type="number" 
+                        name="item2_weight" 
+                        value={formData.item2_weight} 
+                        onChange={handleChange}
+                        placeholder="kg"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Item 3 */}
+                <div className="p-4 bg-neutral-950/40 border border-neutral-800/60 rounded-xl">
+                  <h4 className="text-sm font-semibold text-amber-500 mb-3">{t.thirdItem}</h4>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.height}</label>
+                      <input 
+                        type="number" 
+                        name="item3_height" 
+                        value={formData.item3_height} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.width}</label>
+                      <input 
+                        type="number" 
+                        name="item3_width" 
+                        value={formData.item3_width} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.depth}</label>
+                      <input 
+                        type="number" 
+                        name="item3_depth" 
+                        value={formData.item3_depth} 
+                        onChange={handleChange}
+                        placeholder="cm"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{isAr ? "الوزن (كجم)" : "Weight (kg)"}</label>
+                      <input 
+                        type="number" 
+                        name="item3_weight" 
+                        value={formData.item3_weight} 
+                        onChange={handleChange}
+                        placeholder="kg"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Packaged/Bundle Pack Dimensions (conditional) */}
             {formData.item_type === "bundle" && (
@@ -306,35 +569,37 @@ export default function AdminProductEdit() {
             )}
 
             {/* Weights Section */}
-            <div className="border-t border-neutral-800/80 mt-6 pt-6">
-              <h3 className="text-base font-bold text-white mb-4">{t.weights}</h3>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs text-neutral-400 mb-1">{t.singleWeight}</label>
-                  <input 
-                    type="number" 
-                    name="single_weight" 
-                    value={formData.single_weight} 
-                    onChange={handleChange}
-                    placeholder="kg"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
-                  />
-                </div>
-                {formData.item_type === "bundle" && (
+            {formData.item_type !== "bundle_three" && (
+              <div className="border-t border-neutral-800/80 mt-6 pt-6">
+                <h3 className="text-base font-bold text-white mb-4">{t.weights}</h3>
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-xs text-neutral-400 mb-1">{t.bundleWeight}</label>
+                    <label className="block text-xs text-neutral-400 mb-1">{t.singleWeight}</label>
                     <input 
                       type="number" 
-                      name="bundle_weight" 
-                      value={formData.bundle_weight} 
+                      name="single_weight" 
+                      value={formData.single_weight} 
                       onChange={handleChange}
                       placeholder="kg"
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
                     />
                   </div>
-                )}
+                  {formData.item_type === "bundle" && (
+                    <div>
+                      <label className="block text-xs text-neutral-400 mb-1">{t.bundleWeight}</label>
+                      <input 
+                        type="number" 
+                        name="bundle_weight" 
+                        value={formData.bundle_weight} 
+                        onChange={handleChange}
+                        placeholder="kg"
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
 

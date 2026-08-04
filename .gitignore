@@ -15,3 +15,5 @@ npm-debug.log*
 coverage/
 dist/
 _archive/
+elmuttahida-frontend/build/
+elmuttahida-frontend/.react-router/

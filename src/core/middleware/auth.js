@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import config from "../../config/index.js";
-import { AuthenticationError } from "../common/error.js";
+import { AuthenticationError, ForbiddenError } from "../common/error.js";
 import { setContextUser } from "../common/context.js";
 
-const authMiddleware = (req, res, next) => {
+export const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         console.warn(`Unauthorized attempt: No token provided from IP ${req.ip}`);
@@ -27,6 +27,19 @@ const authMiddleware = (req, res, next) => {
         }
         return next(new AuthenticationError("Invalid token"));
     }
+};
+
+export const requireRole = (...allowedRoles) => {
+    const roles = allowedRoles.flat();
+    return (req, res, next) => {
+        if (!req.user) {
+            return next(new AuthenticationError("Unauthorized: Authentication required"));
+        }
+        if (roles.length > 0 && !roles.includes(req.user.role)) {
+            return next(new ForbiddenError(`Forbidden: Action requires one of [${roles.join(", ")}] roles`));
+        }
+        next();
+    };
 };
 
 export default authMiddleware;

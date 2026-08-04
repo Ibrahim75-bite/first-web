@@ -2,11 +2,26 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import config from "../../config/index.js";
-import authRepository from "./repository.js";
+import pool from "../../core/database/db.js";
+import withTransaction from "../../core/database/transaction.js";
+import defaultAuthRepository from "./repository.js";
+import defaultAuditLogger from "../../core/common/audit.js";
 import { AuthenticationError } from "../../core/common/error.js";
-import auditLogger from "../../core/common/audit.js";
 
+/**
+ * Enterprise Authentication Service (ARCH-01, ARCH-03 remediated)
+ */
 export class AuthService {
+    constructor({
+        authRepo = defaultAuthRepository,
+        auditLog = defaultAuditLogger,
+        dbPool = pool
+    } = {}) {
+        this.authRepo = authRepo;
+        this.auditLogger = auditLog;
+        this.db = dbPool;
+    }
+
     _hashToken(token) {
         return crypto.createHash("sha256").update(token).digest("hex");
     }
@@ -24,31 +39,25 @@ export class AuthService {
     }
 
     async login(username, password) {
-        const admin = await authRepository.findByUsername(username);
+        const admin = await this.authRepo.findByUsername(username, this.db);
         if (!admin) {
-            await auditLogger.logEvent("auth.failed", `User: ${username} (Not found)`);
+            await this.auditLogger.logEvent("auth.failed", `User: ${username} (Not found or inactive)`);
             throw new AuthenticationError("Invalid username or password");
         }
 
         const isValid = await bcrypt.compare(password, admin.password_hash);
         if (!isValid) {
-            await auditLogger.logEvent("auth.failed", `User: ${username} (Incorrect password)`);
+            await this.auditLogger.logEvent("auth.failed", `User: ${username} (Incorrect password)`);
             throw new AuthenticationError("Invalid username or password");
         }
 
-        // Generate Access Token (Short-lived)
         const token = this._generateAccessToken(admin);
-
-        // Generate Refresh Token (Long-lived)
         const rawRefreshToken = crypto.randomBytes(40).toString("hex");
         const tokenHash = this._hashToken(rawRefreshToken);
-        
-        // Expiration calculation: 7 days
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-        await authRepository.saveRefreshToken(admin.id, tokenHash, expiresAt);
-
-        await auditLogger.logEvent("auth.login", `User: ${username}`);
+        await this.authRepo.saveRefreshToken(admin.id, tokenHash, expiresAt, this.db);
+        await this.auditLogger.logEvent("auth.login", `User: ${username}`);
 
         return {
             token,
@@ -67,74 +76,80 @@ export class AuthService {
         }
 
         const tokenHash = this._hashToken(refreshToken);
-        const record = await authRepository.findRefreshToken(tokenHash);
 
-        if (!record) {
-            throw new AuthenticationError("Invalid refresh token");
-        }
+        return await withTransaction(async (tx) => {
+            const client = tx.client;
 
-        // Check if token was already revoked
-        if (record.revoked) {
-            // Reuse detection! Revoke all tokens for this user as a safeguard.
-            await authRepository.revokeAllRefreshTokensForUser(record.user_id);
-            await auditLogger.logEvent(
-                "security.alert",
-                `Refresh token reuse detected for User ID ${record.user_id}! Revoking all sessions.`,
-                { token_hash_attempted: tokenHash }
+            // Atomic lock FOR UPDATE
+            const recordRes = await client.query(
+                `SELECT id, user_id, token_hash, expires_at, revoked, replaced_by_token_hash 
+                 FROM refresh_tokens 
+                 WHERE token_hash = $1 FOR UPDATE`,
+                [tokenHash]
             );
-            throw new AuthenticationError("Token reuse detected. All sessions revoked.");
-        }
+            const record = recordRes.rows[0];
 
-        // Check expiration
-        if (new Date() > new Date(record.expires_at)) {
-            throw new AuthenticationError("Refresh token expired");
-        }
+            if (!record) {
+                throw new AuthenticationError("Invalid refresh token");
+            }
 
-        // Token rotation: generate new tokens
-        const admin = { id: record.user_id }; // We just need user ID to generate tokens
-        // Let's resolve the user from DB to obtain username and role for JWT payload consistency
-        const userResult = await authRepository.findByUsername(record.username);
-        // Note: we can fetch by ID directly or use username, let's make sure we query DB safely.
-        // Let's load the full user object to ensure claims are correct.
-        const fullUserQuery = await poolQuery(`SELECT id, username, role FROM admins WHERE id = $1`, [record.user_id]);
-        if (fullUserQuery.rows.length === 0) {
-            throw new AuthenticationError("User associated with token not found");
-        }
-        const userObj = fullUserQuery.rows[0];
+            if (record.revoked) {
+                await client.query(`UPDATE refresh_tokens SET revoked = TRUE, revoked_at = NOW() WHERE user_id = $1`, [record.user_id]);
 
-        const token = this._generateAccessToken(userObj);
-        const rawRefreshToken = crypto.randomBytes(40).toString("hex");
-        const newHash = this._hashToken(rawRefreshToken);
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                await this.auditLogger.logEvent(
+                    "security.alert",
+                    `Refresh token reuse detected for User ID ${record.user_id}! Revoking all sessions.`,
+                    { token_hash_attempted: tokenHash }
+                );
+                throw new AuthenticationError("Token reuse detected. All sessions revoked.");
+            }
 
-        // Transactional update: replace old token, insert new token
-        await authRepository.updateReplacedToken(tokenHash, newHash);
-        await authRepository.saveRefreshToken(userObj.id, newHash, expiresAt);
+            if (new Date() > new Date(record.expires_at)) {
+                throw new AuthenticationError("Refresh token expired");
+            }
 
-        return {
-            token,
-            refreshToken: rawRefreshToken
-        };
+            const userRes = await client.query(
+                `SELECT id, username, role, is_active FROM admins WHERE id = $1 AND (is_active IS TRUE OR is_active IS NULL) AND deleted_at IS NULL`,
+                [record.user_id]
+            );
+            if (userRes.rows.length === 0) {
+                throw new AuthenticationError("User associated with token not found or disabled");
+            }
+            const userObj = userRes.rows[0];
+
+            const token = this._generateAccessToken(userObj);
+            const rawRefreshToken = crypto.randomBytes(40).toString("hex");
+            const newHash = this._hashToken(rawRefreshToken);
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+            await client.query(
+                `UPDATE refresh_tokens SET revoked = TRUE, revoked_at = NOW(), replaced_by_token_hash = $1 WHERE id = $2`,
+                [newHash, record.id]
+            );
+            await client.query(
+                `INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+                [userObj.id, newHash, expiresAt]
+            );
+
+            return {
+                token,
+                refreshToken: rawRefreshToken
+            };
+        });
     }
 
     async logout(refreshToken) {
         if (refreshToken) {
             const tokenHash = this._hashToken(refreshToken);
-            await authRepository.revokeRefreshToken(tokenHash);
-            await auditLogger.logEvent("auth.logout", "Single session closed");
+            await this.authRepo.revokeRefreshToken(tokenHash, this.db);
+            await this.auditLogger.logEvent("auth.logout", "Single session closed");
         }
     }
 
     async logoutAll(userId) {
-        await authRepository.revokeAllRefreshTokensForUser(userId);
-        await auditLogger.logEvent("auth.logout_all", `All sessions closed for User ID ${userId}`);
+        await this.authRepo.revokeAllRefreshTokensForUser(userId, this.db);
+        await this.auditLogger.logEvent("auth.logout_all", `All sessions closed for User ID ${userId}`);
     }
-}
-
-// Inline helper for standard queries
-import pool from "../../core/database/db.js";
-async function poolQuery(sql, params) {
-    return pool.query(sql, params);
 }
 
 export const authService = new AuthService();
