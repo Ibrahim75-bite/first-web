@@ -1,4 +1,6 @@
 {
+  "framework": "react-router",
+  "outputDirectory": "build/client",
   "headers": [
     {
       "source": "/(.*)",
