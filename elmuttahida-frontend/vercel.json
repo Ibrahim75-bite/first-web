@@ -3,6 +3,7 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "react-router",
+  "outputDirectory": "build/client",
   "functions": {
     "build/server/index.js": {
       "maxDuration": 30
