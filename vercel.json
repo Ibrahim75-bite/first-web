@@ -3,6 +3,7 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "node",
+  "outputDirectory": "build/client",
   "rewrites": [
     {
       "source": "/api/(.*)",
