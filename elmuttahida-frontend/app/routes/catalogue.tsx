@@ -3,88 +3,137 @@ import { Link, useLoaderData, useNavigate } from "react-router";
 import { LanguageContext } from "../context/LanguageContext";
 import { ThemeContext } from "../context/ThemeContext";
 import type { Route } from "./+types/catalogue";
+import { fetchProducts as fetchSupabaseProducts, type SupabaseProduct } from "../lib/supabase";
+
+function mapProductToUI(p: SupabaseProduct) {
+    const swatches = (p.product_variants || []).map((v, i) => {
+        let hex = "#d4af37";
+        if (v.color_code?.includes("BLK")) hex = "#1a1a1a";
+        else if (v.color_code?.includes("SLV")) hex = "#b8b8b8";
+        else if (v.color_code?.includes("BRN")) hex = "#6f4e37";
+        else if (v.color_code?.includes("BUR")) hex = "#800020";
+        else if (v.color_code?.includes("AMB")) hex = "#d97706";
+        else if (v.color_code?.includes("PPL")) hex = "#6b21a8";
+        return {
+            color: hex,
+            name: v.color_en || `Finish ${i + 1}`,
+            name_ar: v.color_ar,
+            sku: v.sku,
+            image: v.image_url || p.primary_image,
+        };
+    });
+
+    return {
+        _id: p.id,
+        product_id: p.id,
+        name: p.name_en,
+        nameAr: p.name_ar,
+        model_sku: p.product_code,
+        slug: p.handle || p.product_code,
+        images: p.images && p.images.length > 0 ? p.images : [p.primary_image],
+        category: p.category,
+        is_bundle: p.is_bundle,
+        bundle_pieces: p.bundle_pieces || [],
+        base_price: p.base_price,
+        variants: swatches.length > 0 ? swatches : [
+            {
+                color: "#d4af37",
+                name: "White & Gold",
+                name_ar: "أبيض وذهبي",
+                sku: `${p.product_code}-PN01-WHT-GLD`,
+                image: p.primary_image,
+            },
+        ],
+    };
+}
 
 // ── Loader for initial SSR ──
 export async function loader({ request }: Route.LoaderArgs) {
     const url = new URL(request.url);
     const search = url.searchParams.get("search") || "";
-    const tags = url.searchParams.get("tags") || "";
-    const page = url.searchParams.get("page") || "1";
+    const category = url.searchParams.get("category") || "";
+    const page = parseInt(url.searchParams.get("page") || "1", 10);
 
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
     try {
-        const res = await fetch(`${apiUrl}/products?search=${search}&tags=${tags}&page=${page}&limit=20`);
-        if (!res.ok) throw new Error("Failed to fetch");
-        const data = await res.json();
-        return { initialData: data.data || [], initialTotal: data.total || 0, initialPages: data.totalPages || 1 };
+        const result = await fetchSupabaseProducts({
+            search,
+            category: category || undefined,
+            page,
+            limit: 24,
+        });
+        return {
+            initialData: result.data.map(mapProductToUI),
+            initialTotal: result.total,
+            initialPages: result.totalPages,
+        };
     } catch (err) {
+        console.error("Loader fetch error:", err);
         return { initialData: [], initialTotal: 0, initialPages: 1 };
     }
 }
 
 export function meta() {
     return [
-        { title: "Vase Catalogue | El-Muttahida" },
-        { name: "description", content: "Explore our premium vase collections" },
+        { title: "Master Catalogue | El-Muttahida" },
+        { name: "description", content: "Explore our premium Egyptian ceramic vase collections and master pottery" },
     ];
 }
 
 // ── Labels ──
 const labels = {
     en: {
-        searchPlaceholder: "Search SKU...",
-        collections: "COLLECTIONS",
-        styleMaterial: "STYLE & MATERIAL",
+        searchPlaceholder: "Search SKU or product name...",
+        categories: "PRODUCT CATEGORIES",
+        allCategories: "All Products",
         showing: "Showing",
         of: "of",
         products: "products",
         sortBy: "Sort by:",
         newestArrivals: "Newest Arrivals",
         noResults: "No products found matching your criteria.",
-        tryAdjusting: "Try adjusting your search or filters.",
+        tryAdjusting: "Try adjusting your search or category filter.",
         loadMore: "Load More",
         loading: "Loading...",
         addToInquiry: "Add to Inquiry",
         errorMessage: "Failed to load products. Please try again.",
-        heroBanner: "SUMMER 2026 COLLECTION",
-        heroTitle: "Modern Clay Elegance",
-        heroDescription: "Discover our latest range of handcrafted minimalist vases, designed for premium spaces.",
+        heroBanner: "SUMMER 2026 MASTER CATALOGUE",
+        heroTitle: "Egyptian Ceramic Mastery",
+        heroDescription: "Explore our full master catalog of 38 exquisite handcrafted ceramic vases, multi-piece bundles, and luxury decorative accents.",
         inquiryCart: "Inquiry Cart",
         requestQuote: "REQUEST QUOTE",
+        bundleBadge: "Luxury Bundle",
     },
     ar: {
-        searchPlaceholder: "بحث بالرمز...",
-        collections: "المجموعات",
-        styleMaterial: "الأسلوب والمادة",
+        searchPlaceholder: "بحث برمز SKU أو اسم المنتج...",
+        categories: "أقسام الكتالوج",
+        allCategories: "جميع المنتجات",
         showing: "عرض",
         of: "من",
         products: "منتج",
         sortBy: "ترتيب حسب:",
         newestArrivals: "أحدث الوصولات",
         noResults: "لم يتم العثور على منتجات.",
-        tryAdjusting: "جرب تعديل البحث أو الفلاتر.",
+        tryAdjusting: "جرب تعديل البحث أو اختيار قسم آخر.",
         loadMore: "تحميل المزيد",
         loading: "جارٍ التحميل...",
         addToInquiry: "إضافة للاستفسار",
         errorMessage: "فشل تحميل المنتجات.",
-        heroBanner: "مجموعة صيف 2026",
-        heroTitle: "أناقة الخزف الحديث",
-        heroDescription: "اكتشف مجموعتنا الأحدث من المزهريات المصنوعة يدويًا، مصممة للمساحات الفاخرة.",
+        heroBanner: "الكتالوج الشامل لصيف 2026",
+        heroTitle: "أصالة الخزف المصري",
+        heroDescription: "استكشف كتالوجنا الكامل المكون من 38 تحفة خزفية مصرية تضم أطقم متعددة القطع، مزهريات راقية، وصحون تقديم ملكية.",
         inquiryCart: "سلة الاستفسار",
         requestQuote: "طلب عرض أسعار",
+        bundleBadge: "طقم متكامل",
     },
 };
 
-// ── Filter Data ──
-const STYLE_TAGS = ["modern", "classic", "ceramic", "glass"];
-const COLLECTION_TAGS = ["summer-2026", "royal-heritage", "minimalist"];
-const COLLECTION_LABELS: Record<string, { en: string; ar: string }> = {
-    "summer-2026": { en: "Summer 2026", ar: "صيف 2026" },
-    "royal-heritage": { en: "Royal Heritage", ar: "التراث الملكي" },
-    minimalist: { en: "Minimalist", ar: "بسيط" },
-};
-
-const FALLBACK_COLORS = ["#c4a35a", "#8b5e3c", "#2f4f4f", "#2c2c2c", "#f5f0e8", "#3d5a80", "#b8395a"];
+const CATEGORIES = [
+    { key: "", en: "All Products", ar: "جميع المنتجات" },
+    { key: "Multi-Piece Sets & Bundles", en: "Multi-Piece Sets & Bundles", ar: "أطقم ومجموعات متكاملة" },
+    { key: "Single Vases & Planters", en: "Single Vases & Planters", ar: "مزهريات مفردة" },
+    { key: "Plates & Centerpieces", en: "Plates & Centerpieces", ar: "صحون ومراكز طاولة" },
+    { key: "Modern Sculptures & Décor", en: "Modern Sculptures & Décor", ar: "منحوتات ومجسمات عصرية" },
+];
 
 export default function Catalogue() {
     const { initialData, initialTotal, initialPages } = useLoaderData<typeof loader>();
@@ -100,17 +149,13 @@ export default function Catalogue() {
     const [total, setTotal] = useState(initialTotal);
     const [totalPages, setTotalPages] = useState(initialPages);
     const [search, setSearch] = useState("");
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [cartCount, setCartCount] = useState(0);
 
     const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>({});
-    const [openSections, setOpenSections] = useState({ collections: true, style: true });
-
-    const toggleSection = (key: keyof typeof openSections) =>
-        setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
     // ── Cart count ──
     const refreshCartCount = useCallback(() => {
@@ -126,29 +171,28 @@ export default function Catalogue() {
         refreshCartCount();
     }, [refreshCartCount]);
 
-    // ── Fetch Products Manually (Client Side override) ──
-    const fetchProducts = useCallback(
+    // ── Fetch Products (Client Side via Supabase) ──
+    const loadProducts = useCallback(
         async (currentPage: number, append = false) => {
             try {
                 setLoading(true);
                 setError(null);
-                const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-                const querySearch = search.trim() ? `&search=${encodeURIComponent(search.trim())}` : "";
-                const queryTags = selectedTags.length ? `&tags=${encodeURIComponent(selectedTags.join(","))}` : "";
+                const result = await fetchSupabaseProducts({
+                    search: search.trim() || undefined,
+                    category: selectedCategory || undefined,
+                    page: currentPage,
+                    limit: 24,
+                });
 
-                const res = await fetch(`${apiUrl}/products?lang=${lang}&page=${currentPage}&limit=20${querySearch}${queryTags}`);
-                if (!res.ok) throw new Error("Fetch failed");
-
-                const data = await res.json();
-                const newProducts = data.data || [];
+                const mapped = result.data.map(mapProductToUI);
 
                 if (append) {
-                    setProducts((prev) => [...prev, ...newProducts]);
+                    setProducts((prev) => [...prev, ...mapped]);
                 } else {
-                    setProducts(newProducts);
+                    setProducts(mapped);
                 }
-                setTotal(data.total || 0);
-                setTotalPages(data.totalPages || 1);
+                setTotal(result.total);
+                setTotalPages(result.totalPages);
             } catch (err) {
                 console.error("Catalogue fetch error", err);
                 setError(t.errorMessage);
@@ -156,98 +200,73 @@ export default function Catalogue() {
                 setLoading(false);
             }
         },
-        [lang, search, selectedTags, t.errorMessage]
+        [search, selectedCategory, t.errorMessage]
     );
 
-    // Re-fetch when filters change (ignoring page 1 initial hydration if possible)
+    // Re-fetch when search or category changes
     useEffect(() => {
-        // Only re-fetch if not using initial data logic immediately
         setPage(1);
-        fetchProducts(1, false);
-    }, [search, selectedTags, lang, fetchProducts]);
+        loadProducts(1, false);
+    }, [search, selectedCategory, loadProducts]);
 
     const handleLoadMore = () => {
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchProducts(nextPage, true);
-    };
-
-    const toggleTag = (tag: string) => {
-        setSelectedTags((prev) =>
-            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-        );
+        loadProducts(nextPage, true);
     };
 
     // ── Add to Inquiry ──
     const addToInquiry = (prod: any, variantIdx: number) => {
         const variant = prod.variants?.[variantIdx || 0];
         const cartItem = {
-            id: prod._id || prod.product_id, // Normalize id depending on API structure
+            id: prod._id || prod.product_id,
             name: lang === "ar" && prod.nameAr ? prod.nameAr : prod.name,
             model_sku: prod.model_sku,
-            image: variant?.images?.[0]?.thumbnail || variant?.images?.[0]?.url || prod.images?.[0] || null,
-            mainImage: variant?.images?.[0]?.url || variant?.images?.[0]?.thumbnail || prod.images?.[0] || null,
+            image: variant?.image || prod.images?.[0] || null,
+            mainImage: variant?.image || prod.images?.[0] || null,
             code: variant?.sku || prod.model_sku,
-            color: variant?.color || prod.colors?.[0],
-            finish: variant?.finish || "Standard",
+            color: variant?.name || "Standard",
+            finish: variant?.name || "Standard",
             slug: prod.slug,
-            qty: variant?.min_order_qty || 1,
+            qty: 1,
+            is_bundle: prod.is_bundle,
+            bundle_pieces: prod.bundle_pieces || [],
         };
         const existing = JSON.parse(localStorage.getItem("elmuttahida_inquiryCart") || "[]");
         existing.push(cartItem);
         localStorage.setItem("elmuttahida_inquiryCart", JSON.stringify(existing));
         refreshCartCount();
-        alert(lang === "ar" ? `تمت إضافة المُنْتَج بنجاح!` : `Added to inquiry cart successfully!`);
+        alert(lang === "ar" ? `تمت إضافة ${cartItem.name} إلى سلة الاستفسار بنجاح!` : `Added ${cartItem.name} to inquiry cart successfully!`);
     };
 
-    // ── Helpers ──
     const getProductImage = (prod: any, variantIdx: number) => {
         const v = prod.variants?.[variantIdx || 0];
-        return v?.images?.[0]?.thumbnail || v?.images?.[0]?.url || prod.images?.[0];
+        return v?.image || prod.images?.[0];
     };
 
-    const getVariantSwatches = (prod: any) => {
-        if (prod.variants?.length > 0) {
-            return prod.variants.map((v: any, i: number) => ({
-                color: v.color_code || FALLBACK_COLORS[i % FALLBACK_COLORS.length],
-                name: v.color || `Variant ${i + 1}`,
-            }));
-        } else if (prod.colors?.length > 0) {
-            return prod.colors.map((c: string, i: number) => ({
-                color: c,
-                name: c
-            }));
-        }
-        return [];
+    const formatPrice = (price: number) => {
+        if (!price) return "";
+        return `${price.toLocaleString()} ${lang === "ar" ? "ج.م" : "EGP"}`;
     };
-
-    // ── Chevron SVG ──
-    const Chevron = ({ open }: { open: boolean }) => (
-        <svg className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""} ${isDark ? "text-gray-400" : "text-gray-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-    );
 
     // ── Theme classes ──
     const c = {
-        bg: "bg-surface-50 dark:bg-[#101622]",
+        bg: "bg-[#fbfaf8] dark:bg-[#101622]",
         sidebar: isDark ? "bg-[#101622] border-gray-800" : "bg-white border-gray-200",
         input: isDark ? "bg-[#1a2332] text-gray-200 placeholder:text-gray-500 border-gray-700" : "bg-gray-50 text-gray-800 placeholder:text-gray-400 border-gray-200",
         sectionTitle: isDark ? "text-gray-300" : "text-gray-700",
-        checkbox: isDark ? "border-gray-600 bg-[#1a2332]" : "border-gray-300 bg-white",
-        checkboxLabel: isDark ? "text-gray-400" : "text-gray-600",
-        divider: isDark ? "border-gray-800" : "border-gray-200",
-        card: isDark ? "bg-[#1a2332] border-gray-800/50 hover:border-gray-700" : "bg-white border-gray-200 hover:border-gray-300 shadow-sm",
-        cardImageBg: isDark ? "bg-[#141e2e]" : "bg-gray-100",
+        card: isDark ? "bg-[#1a2332] border-gray-800/60 hover:border-gray-700" : "bg-white border-gray-200/80 hover:border-gray-300 shadow-sm",
+        cardImageBg: isDark ? "bg-[#141e2e]" : "bg-stone-50",
         cardTitle: isDark ? "text-white" : "text-gray-900",
-        cardDesc: isDark ? "text-gray-500" : "text-gray-500",
-        cardBtn: isDark ? "border-gray-700 bg-[#1f2b3d] hover:bg-[#263548] text-white" : "border-gray-200 bg-white hover:bg-gray-50 text-gray-900",
-        banner: isDark ? "bg-[#1a2332]" : "bg-gradient-to-r from-primary-dark to-primary",
+        cardDesc: isDark ? "text-gray-400" : "text-gray-500",
+        cardBtn: isDark ? "border-gray-700 bg-[#1f2b3d] hover:bg-[#263548] text-white" : "border-gray-200 bg-white hover:bg-stone-50 text-gray-900",
+        banner: isDark ? "bg-[#1a2332]" : "bg-gradient-to-r from-stone-900 via-stone-800 to-amber-950",
     };
 
     return (
         <div className={`flex min-h-screen pt-20 ${c.bg} transition-colors duration-300`} dir={dir}>
-            <aside className={`hidden md:flex w-56 lg:w-64 shrink-0 flex-col gap-6 border-r ${c.sidebar} p-6 transition-colors duration-300`}>
+            {/* Sidebar */}
+            <aside className={`hidden md:flex w-64 lg:w-72 shrink-0 flex-col gap-6 border-r ${c.sidebar} p-6 transition-colors duration-300`}>
                 <div className="relative">
                     <svg className={`absolute ${dir === "rtl" ? "right-3" : "left-3"} top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -257,97 +276,205 @@ export default function Catalogue() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder={t.searchPlaceholder}
-                        className={`w-full h-10 ${dir === "rtl" ? "pr-9 pl-3" : "pl-9 pr-3"} rounded-lg text-sm outline-none border transition-colors ${c.input}`}
+                        className={`w-full h-11 ${dir === "rtl" ? "pr-9 pl-3" : "pl-9 pr-3"} rounded-xl text-sm outline-none border transition-colors ${c.input}`}
                     />
                 </div>
 
                 <div>
-                    <button onClick={() => toggleSection("collections")} className={`flex w-full items-center justify-between py-2 text-[11px] font-bold tracking-widest uppercase ${c.sectionTitle}`}>
-                        {t.collections} <Chevron open={openSections.collections} />
-                    </button>
-                    {openSections.collections && (
-                        <div className="mt-2 space-y-2.5">
-                            {COLLECTION_TAGS.map((tag) => (
-                                <label key={tag} className="flex items-center gap-2.5 cursor-pointer group">
-                                    <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className={`h-4 w-4 rounded cursor-pointer ${c.checkbox}`} />
-                                    <span className={`text-sm ${c.checkboxLabel}`}>{COLLECTION_LABELS[tag]?.[lang] || tag}</span>
-                                </label>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className={`border-t pt-4 ${c.divider}`}>
-                    <button onClick={() => toggleSection("style")} className={`flex w-full items-center justify-between py-2 text-[11px] font-bold tracking-widest uppercase ${c.sectionTitle}`}>
-                        {t.styleMaterial} <Chevron open={openSections.style} />
-                    </button>
-                    {openSections.style && (
-                        <div className="mt-2 space-y-2.5">
-                            {STYLE_TAGS.map((tag) => (
-                                <label key={tag} className="flex items-center gap-2.5 cursor-pointer group">
-                                    <input type="checkbox" checked={selectedTags.includes(tag)} onChange={() => toggleTag(tag)} className={`h-4 w-4 rounded cursor-pointer ${c.checkbox}`} />
-                                    <span className={`text-sm capitalize ${c.checkboxLabel}`}>{tag}</span>
-                                </label>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </aside>
-
-            <main className="flex-grow p-4 sm:p-6 lg:p-8 pb-28 mb-32">
-                <div className={`mb-8 rounded-2xl overflow-hidden relative h-48 ${c.banner}`}>
-                    <div className="absolute inset-0 bg-black/40 z-10" />
-                    <div className="relative z-20 h-full flex flex-col justify-center px-10">
-                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-primary-200 mb-2">{t.heroBanner}</span>
-                        <h1 className="font-serif text-3xl font-bold text-white mb-2">{t.heroTitle}</h1>
-                        <p className="text-sm text-gray-300 max-w-md">{t.heroDescription}</p>
+                    <h3 className={`text-[11px] font-bold tracking-widest uppercase mb-3 ${c.sectionTitle}`}>
+                        {t.categories}
+                    </h3>
+                    <div className="space-y-1.5">
+                        {CATEGORIES.map((cat) => {
+                            const isSelected = selectedCategory === cat.key;
+                            return (
+                                <button
+                                    key={cat.key}
+                                    onClick={() => setSelectedCategory(cat.key)}
+                                    className={`w-full text-left flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                        isSelected
+                                            ? "bg-[#1152d4] text-white shadow-sm"
+                                            : isDark
+                                            ? "text-gray-400 hover:bg-gray-800/50 hover:text-white"
+                                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                    }`}
+                                >
+                                    <span>{lang === "ar" ? cat.ar : cat.en}</span>
+                                    {isSelected && (
+                                        <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">✓</span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center mb-6">
-                    <p className="text-sm text-gray-500">
-                        {t.showing} <span className="font-medium text-gray-900 dark:text-white">{products.length}</span> {t.of} <span className="font-medium text-gray-900 dark:text-white">{total}</span> {t.products}
+                {/* Quick Info box */}
+                <div className={`mt-auto p-4 rounded-xl border text-xs ${isDark ? "bg-[#151c28] border-gray-800 text-gray-400" : "bg-stone-50 border-stone-200 text-stone-600"}`}>
+                    <div className="font-bold text-sm mb-1 text-gray-900 dark:text-white">
+                        {lang === "ar" ? "تصنيع وتصدير B2B" : "Wholesale & Custom Export"}
+                    </div>
+                    <p className="leading-relaxed">
+                        {lang === "ar"
+                            ? "جميع الموديلات متوفرة للطلبيات المخصصة وتصدير الفنادق والمشاريع المعمارية."
+                            : "Available for hospitality contracts, architectural projects, and bespoke corporate orders."}
                     </p>
                 </div>
+            </aside>
 
-                {error && <div className="mb-6 bg-red-100 text-red-600 p-4 rounded-xl">{error}</div>}
+            {/* Main Content Area */}
+            <main className="flex-grow p-4 sm:p-6 lg:p-8 pb-28 mb-32">
+                {/* Hero Banner */}
+                <div className={`mb-8 rounded-2xl overflow-hidden relative h-52 shadow-md ${c.banner}`}>
+                    <div className="absolute inset-0 bg-black/40 z-10" />
+                    <div className="relative z-20 h-full flex flex-col justify-center px-6 sm:px-10">
+                        <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-amber-300 mb-2">
+                            {t.heroBanner}
+                        </span>
+                        <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
+                            {t.heroTitle}
+                        </h1>
+                        <p className="text-xs sm:text-sm text-gray-200 max-w-xl leading-relaxed">
+                            {t.heroDescription}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Counter bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-800">
+                    <p className="text-sm text-gray-500">
+                        {t.showing} <span className="font-bold text-gray-900 dark:text-white">{products.length}</span> {t.of}{" "}
+                        <span className="font-bold text-gray-900 dark:text-white">{total}</span> {t.products}
+                    </p>
+
+                    {/* Mobile category pills */}
+                    <div className="flex md:hidden gap-2 overflow-x-auto pb-1">
+                        {CATEGORIES.map((cat) => (
+                            <button
+                                key={cat.key}
+                                onClick={() => setSelectedCategory(cat.key)}
+                                className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap font-medium transition-colors ${
+                                    selectedCategory === cat.key
+                                        ? "bg-[#1152d4] text-white"
+                                        : isDark
+                                        ? "bg-gray-800 text-gray-300"
+                                        : "bg-gray-200 text-gray-700"
+                                }`}
+                            >
+                                {lang === "ar" ? cat.ar : cat.en}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {error && <div className="mb-6 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 p-4 rounded-xl text-sm">{error}</div>}
 
                 {!loading && !error && products.length === 0 && (
                     <div className="py-20 text-center">
-                        <p className="font-bold mb-1 dark:text-white">{t.noResults}</p>
+                        <p className="font-bold text-lg mb-1 dark:text-white">{t.noResults}</p>
                         <p className="text-sm text-gray-500">{t.tryAdjusting}</p>
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {/* Products Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {products.map((prod) => {
                         const variantIdx = selectedVariants[prod._id || prod.product_id] || 0;
                         const image = getProductImage(prod, variantIdx);
-                        const swatches = getVariantSwatches(prod);
+                        const swatches = prod.variants || [];
 
                         return (
-                            <div key={prod._id || prod.product_id} className={`group flex flex-col rounded-2xl overflow-hidden border transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${c.card}`}>
-                                <div onClick={() => navigate(`/product/${(prod.slug && prod.slug !== 'null') ? prod.slug : (prod.product_id || prod._id)}`)} className={`relative aspect-square overflow-hidden cursor-pointer ${c.cardImageBg}`}>
+                            <div
+                                key={prod._id || prod.product_id}
+                                className={`group flex flex-col rounded-2xl overflow-hidden border transition-all duration-300 hover:scale-[1.01] hover:shadow-xl ${c.card}`}
+                            >
+                                <div
+                                    onClick={() => navigate(`/product/${prod.slug || prod.model_sku}`)}
+                                    className={`relative aspect-square overflow-hidden cursor-pointer ${c.cardImageBg}`}
+                                >
                                     {image ? (
-                                        <img src={image} alt={prod.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                        <img
+                                            src={image}
+                                            alt={prod.name}
+                                            loading="lazy"
+                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        />
                                     ) : (
-                                        <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">No Image</div>
+                                        <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
+                                            No Image
+                                        </div>
                                     )}
-                                    {swatches.length > 0 && (
-                                        <div className="absolute bottom-3 left-3 flex gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
+
+                                    {/* Bundle Pill Badge */}
+                                    {prod.is_bundle && (
+                                        <div className="absolute top-3 right-3 z-10">
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-500/90 backdrop-blur-xs text-white shadow-xs">
+                                                ★ {t.bundleBadge}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Swatches */}
+                                    {swatches.length > 1 && (
+                                        <div
+                                            className="absolute bottom-3 left-3 flex gap-1.5 z-10 bg-black/40 backdrop-blur-xs px-2 py-1 rounded-full"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
                                             {swatches.map((swatch: any, i: number) => (
-                                                <button key={i} onClick={() => setSelectedVariants(p => ({ ...p, [prod._id || prod.product_id]: i }))} className={`h-4 w-4 rounded-full border-2 ${variantIdx === i ? "border-white scale-125" : "border-white/50"}`} style={{ backgroundColor: swatch.color }} title={swatch.name} />
+                                                <button
+                                                    key={i}
+                                                    onClick={() =>
+                                                        setSelectedVariants((p) => ({
+                                                            ...p,
+                                                            [prod._id || prod.product_id]: i,
+                                                        }))
+                                                    }
+                                                    className={`h-4 w-4 rounded-full border-2 transition-transform ${
+                                                        variantIdx === i
+                                                            ? "border-white scale-125 shadow-xs"
+                                                            : "border-white/50 hover:scale-110"
+                                                    }`}
+                                                    style={{ backgroundColor: swatch.color }}
+                                                    title={lang === "ar" && swatch.name_ar ? swatch.name_ar : swatch.name}
+                                                />
                                             ))}
                                         </div>
                                     )}
                                 </div>
 
                                 <div className="p-4 flex flex-col flex-1">
-                                    <h3 className={`font-serif text-lg font-bold ${c.cardTitle}`}>{lang === "ar" && prod.nameAr ? prod.nameAr : prod.name}</h3>
-                                    <p className={`mt-1 text-xs ${c.cardDesc}`}>SKU: {prod.model_sku || prod.slug}</p>
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                        <span className="font-mono text-[11px] font-bold text-[#1152d4] dark:text-blue-400">
+                                            {prod.model_sku}
+                                        </span>
+                                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                            {formatPrice(prod.base_price)}
+                                        </span>
+                                    </div>
 
-                                    <button onClick={() => addToInquiry(prod, variantIdx)} className={`mt-auto mt-4 flex items-center justify-center gap-2 w-full h-10 rounded-lg border text-sm font-medium transition-all ${c.cardBtn}`}>
-                                        {t.addToInquiry}
+                                    <h3
+                                        onClick={() => navigate(`/product/${prod.slug || prod.model_sku}`)}
+                                        className={`font-serif text-base font-bold line-clamp-1 cursor-pointer hover:text-[#1152d4] transition-colors ${c.cardTitle}`}
+                                    >
+                                        {lang === "ar" && prod.nameAr ? prod.nameAr : prod.name}
+                                    </h3>
+
+                                    {prod.is_bundle && prod.bundle_pieces?.length > 0 && (
+                                        <p className="text-[11px] text-amber-700 dark:text-amber-400/90 mt-1 line-clamp-1">
+                                            {lang === "ar"
+                                                ? `طقم ${prod.bundle_pieces.length} قطع: ${prod.bundle_pieces.map((p: any) => p.name_ar || p.name_en).join(" + ")}`
+                                                : `Includes ${prod.bundle_pieces.length} pcs: ${prod.bundle_pieces.map((p: any) => p.name_en).join(" + ")}`}
+                                        </p>
+                                    )}
+
+                                    <button
+                                        onClick={() => addToInquiry(prod, variantIdx)}
+                                        className={`mt-4 flex items-center justify-center gap-2 w-full h-10 rounded-xl border text-xs font-bold transition-all shadow-2xs hover:shadow-xs active:scale-95 ${c.cardBtn}`}
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        <span>{t.addToInquiry}</span>
                                     </button>
                                 </div>
                             </div>
@@ -355,9 +482,14 @@ export default function Catalogue() {
                     })}
                 </div>
 
+                {/* Load More Button */}
                 {products.length > 0 && page < totalPages && (
                     <div className="flex justify-center mt-12">
-                        <button onClick={handleLoadMore} disabled={loading} className="rounded-lg border px-8 py-3 text-sm font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loading}
+                            className="rounded-xl border px-8 py-3 text-sm font-bold bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs hover:shadow-md transition-all active:scale-95"
+                        >
                             {loading ? t.loading : t.loadMore}
                         </button>
                     </div>
@@ -366,11 +498,16 @@ export default function Catalogue() {
 
             {/* Floating Inquiry Cart Bar */}
             <div className="fixed bottom-6 w-full px-6 flex justify-end pointer-events-none z-50">
-                <Link to="/cart" className="pointer-events-auto flex items-center gap-2 bg-gray-900/90 dark:bg-gray-100/90 backdrop-blur-md px-6 py-4 rounded-full shadow-2xl text-white dark:text-gray-900 hover:-translate-y-1 transition-transform">
+                <Link
+                    to="/cart"
+                    className="pointer-events-auto flex items-center gap-3 bg-stone-900/95 dark:bg-stone-100/95 backdrop-blur-md px-6 py-3.5 rounded-full shadow-2xl text-white dark:text-stone-900 hover:-translate-y-1 transition-transform"
+                >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
-                    <span className="font-bold">{t.inquiryCart} ({cartCount})</span>
+                    <span className="font-bold text-sm">
+                        {t.inquiryCart} ({cartCount})
+                    </span>
                 </Link>
             </div>
         </div>

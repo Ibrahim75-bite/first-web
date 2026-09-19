@@ -52,12 +52,12 @@ export default function Home() {
     minimalistBlack: isArabic ? "أسود بسيط" : "Minimalist Black",
     limitedEdition: isArabic ? "إصدار محدود" : "Limited Edition",
 
-    // Featured Vases Legacy Area
-    featuredTitle: isArabic ? "مزهريات مميزة" : "Featured Vases",
-    minimalStone: isArabic ? "مزهرية حجر بسيطة" : "Minimal Stone Vase",
-    sculptedCurve: isArabic ? "المنحنى المنحوت" : "Sculpted Curve",
-    nileDelta: isArabic ? "وعاء دلتا النيل" : "Nile Delta Bowl",
-    terraRustic: isArabic ? "تيرا ريفي" : "Terra Rustic",
+    // Featured Vases Area
+    featuredTitle: isArabic ? "مختارات من الكتالوج الرئيسي" : "Featured Masterpieces",
+    featProd1: isArabic ? "طقم مزهريتين وصحن بنقوش زهرية" : "Floral Vase & Plate Set",
+    featProd2: isArabic ? "طقم مزهريتين وصحن مضلع" : "Rigged Fluted Vase Set",
+    featProd3: isArabic ? "طقم 3 دونات هندسية" : "Minimal Plain Donut Trio",
+    featProd4: isArabic ? "مزهرية بورسلين عصرية" : "Modern Porcelain Vase",
 
     elevateTitle: isArabic ? "شريك معنا" : "Partner with us",
     elevateHead: isArabic ? "جاهز لرفع مستوى مخزونك؟" : "Ready to elevate your inventory?",
@@ -236,33 +236,46 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Legacy Featured Vases -> Styled to match home.tsx */}
-      <section className="py-24 bg-white dark:bg-black text-white">
+      {/* Featured Masterpieces from Catalog */}
+      <section className="py-24 bg-stone-50 dark:bg-black text-white">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-4xl md:text-5xl font-serif text-center mb-16 text-secondary dark:text-white">
-            {t.featuredTitle}
-          </h2>
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-secondary dark:text-white">
+              {t.featuredTitle}
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-2">
+              {isArabic ? "استكشف بعضًا من أحدث إبداعاتنا الخزفية المصنوعة يدويًا" : "Handcrafted Egyptian pottery with international appeal"}
+            </p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
             {[
               {
-                img: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=400&h=500&fit=crop",
-                name: t.minimalStone,
+                img: "/images/products/U0005.jpg",
+                name: t.featProd1,
+                sku: "U0005",
+                url: "/product/u0005-set-of-2-vases-and-plate-floweral",
               },
               {
-                img: "https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?w=400&h=500&fit=crop",
-                name: t.sculptedCurve,
+                img: "/images/products/U0006.jpg",
+                name: t.featProd2,
+                sku: "U0006",
+                url: "/product/u0006-rigged-2-vases-and-a-plate",
               },
               {
-                img: "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=400&h=500&fit=crop",
-                name: t.nileDelta,
+                img: "/images/products/U0007.jpg",
+                name: t.featProd3,
+                sku: "U0007",
+                url: "/product/u0007-3-plain-dounts",
               },
               {
-                img: "https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=400&h=500&fit=crop",
-                name: t.terraRustic,
+                img: "/images/products/U0001.jpg",
+                name: t.featProd4,
+                sku: "U0001",
+                url: "/product/u0001-modern-porcelain-vase",
               },
             ].map((item, i) => (
-              <Link key={i} to="/catalogue" className="group rounded-2xl overflow-hidden block">
-                <div className="aspect-[4/5] overflow-hidden rounded-2xl">
+              <Link key={i} to={item.url} className="group rounded-2xl overflow-hidden block bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-3 shadow-xs hover:shadow-xl transition-all">
+                <div className="aspect-[4/5] overflow-hidden rounded-xl bg-stone-100 dark:bg-stone-800">
                   <img
                     loading="lazy"
                     alt={item.name}
@@ -270,9 +283,14 @@ export default function Home() {
                     src={item.img}
                   />
                 </div>
-                <h3 className="mt-5 text-xl font-serif text-center text-secondary dark:text-white">
-                  {item.name}
-                </h3>
+                <div className="p-3 text-center">
+                  <span className="text-[10px] font-mono font-bold text-[#1152d4] dark:text-blue-400 block mb-1">
+                    {item.sku}
+                  </span>
+                  <h3 className="text-sm font-serif font-bold text-secondary dark:text-white line-clamp-1">
+                    {item.name}
+                  </h3>
+                </div>
               </Link>
             ))}
           </div>
