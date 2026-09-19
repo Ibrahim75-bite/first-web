@@ -38,7 +38,7 @@ export default function About() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 items-center">
                     <div className="relative h-[400px] sm:h-[500px] rounded-3xl overflow-hidden shadow-2xl">
                         <img
-                            src="/assets/hero.png"
+                            src="/assets/hero.jpg"
                             alt="Pottery Craftsmanship"
                             className="w-full h-full object-cover"
                         />

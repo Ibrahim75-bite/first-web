@@ -344,7 +344,7 @@ export default function Cart() {
                                 <div className="flex gap-3">
                                     <div className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl ${c.imgPlaceholder}`}>
                                         {getItemImage(item) ? (
-                                            <img src={getItemImage(item)} alt={item.name} className="h-full w-full object-cover" loading="lazy" />
+                                            <img src={getItemImage(item)} alt={item.name} className="h-full w-full object-contain p-1" loading="lazy" />
                                         ) : (
                                             <div className="flex h-full w-full items-center justify-center"><span className={`text-xs ${c.textVeryFaint}`}>—</span></div>
                                         )}
@@ -387,7 +387,7 @@ export default function Cart() {
                                             <div className="flex items-center gap-4">
                                                 <div className={`h-14 w-14 shrink-0 overflow-hidden rounded-2xl ${c.imgPlaceholder}`}>
                                                     {getItemImage(item) ? (
-                                                        <img src={getItemImage(item)} alt={item.name} className="h-full w-full object-cover" loading="lazy" />
+                                                        <img src={getItemImage(item)} alt={item.name} className="h-full w-full object-contain p-1" loading="lazy" />
                                                     ) : (
                                                         <div className="flex h-full w-full items-center justify-center"><span className={`text-xs ${c.textVeryFaint}`}>—</span></div>
                                                     )}

@@ -515,7 +515,7 @@ export default function AdminOrders() {
                         <img
                           src={item.image}
                           alt={item.name}
-                          className="size-12 rounded-lg object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+                          className="size-12 rounded-lg object-contain p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
                         />
                       </td>
                       <td className="px-6 py-4">

@@ -33,7 +33,7 @@ export default function CustomFinishes() {
             desc: isArabic
                 ? "طبقة زجاجية عميقة تمزج بين أكسيد الكوبالت وأكاسيد النحاس لحرق مزدوج ينتج عنه تدرجات زرقة النيل الملكية المستخدمة تاريخيًا في قصور مصر."
                 : "A rich, saturated cobalt and copper oxide glaze fired at 1,120°C to achieve a deep watery vitrified sheen inspired by ancient pharaonic pottery.",
-            image: "/assets/hero.png",
+            image: "/assets/hero.jpg",
         },
         {
             id: "matte-black",

@@ -390,14 +390,14 @@ export default function Catalogue() {
                             >
                                 <div
                                     onClick={() => navigate(`/product/${prod.slug || prod.model_sku}`)}
-                                    className={`relative aspect-square overflow-hidden cursor-pointer ${c.cardImageBg}`}
+                                    className={`relative aspect-square overflow-hidden cursor-pointer flex items-center justify-center p-3 ${c.cardImageBg}`}
                                 >
                                     {image ? (
                                         <img
                                             src={image}
                                             alt={prod.name}
                                             loading="lazy"
-                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            className="h-full w-full object-contain rounded-xl transition-transform duration-500 group-hover:scale-105"
                                         />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
@@ -407,8 +407,8 @@ export default function Catalogue() {
 
                                     {/* Bundle Pill Badge */}
                                     {prod.is_bundle && (
-                                        <div className="absolute top-3 right-3 z-10">
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-500/90 backdrop-blur-xs text-white shadow-xs">
+                                        <div className={`absolute top-2.5 ${dir === "rtl" ? "left-2.5" : "right-2.5"} z-10`}>
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-500 text-white shadow-xs">
                                                 ★ {t.bundleBadge}
                                             </span>
                                         </div>

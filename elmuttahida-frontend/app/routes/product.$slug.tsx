@@ -232,7 +232,7 @@ export default function ProductDetails() {
                                         src={img.thumbnail || img.url}
                                         alt=""
                                         loading="lazy"
-                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        className="h-full w-full object-contain p-1 transition-transform duration-500 group-hover:scale-110"
                                     />
                                 </button>
                             ))}
@@ -240,28 +240,19 @@ export default function ProductDetails() {
                     )}
 
                     {/* Main Image */}
-                    <div className={`relative flex-grow aspect-square rounded-3xl overflow-hidden shadow-lg border ${isDark ? "bg-[#1a2332] border-gray-800" : "bg-[#f8f7f4] border-stone-200"}`}>
+                    <div className={`relative flex-grow aspect-square rounded-3xl overflow-hidden shadow-lg border flex items-center justify-center ${isDark ? "bg-[#141e2e] border-gray-800" : "bg-[#f8f7f4] border-stone-200"}`}>
                         {mainImage ? (
                             <img
                                 key={mainImage}
                                 src={mainImage}
                                 alt={product.name}
                                 onClick={() => setIsModalOpen(true)}
-                                className="h-full w-full object-contain cursor-zoom-in hover:scale-[1.02] transition-transform duration-300 p-4"
+                                className="h-full w-full object-contain rounded-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300 p-1 sm:p-2"
                             />
                         ) : (
-                            <div className={`flex h-full w-full items-center justify-center ${isDark ? "bg-[#1a2332]" : "bg-gray-100"}`}>
+                            <div className={`flex h-full w-full items-center justify-center ${isDark ? "bg-[#141e2e]" : "bg-gray-100"}`}>
                                 <span className={`font-medium ${isDark ? "text-gray-600" : "text-gray-400"}`}>
                                     {lang === "ar" ? "لا توجد صورة" : "No Image"}
-                                </span>
-                            </div>
-                        )}
-
-                        {/* Bundle Badge */}
-                        {product.is_bundle && (
-                            <div className="absolute top-4 right-4 z-10">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full bg-amber-500 text-white shadow-md">
-                                    ★ {lang === "ar" ? "طقم متكامل متعدد القطع" : "Luxury Multi-Piece Set"}
                                 </span>
                             </div>
                         )}
@@ -270,13 +261,20 @@ export default function ProductDetails() {
 
                 {/* ── RIGHT: Product Info ── */}
                 <div className="flex flex-col gap-6">
-                    {/* In Stock Badge & SKU */}
-                    <div className="flex items-center justify-between">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold tracking-wider uppercase rounded-full border ${isDark ? "bg-green-900/30 text-green-400 border-green-800" : "bg-green-50 text-green-700 border-green-200"}`}>
-                            <span className="h-2 w-2 rounded-full bg-green-500" />
-                            {lang === "ar" ? "جاهز للتصدير والتصنيع B2B" : "Ready for B2B Export & Custom Orders"}
-                        </span>
-                        <span className="font-mono text-xs font-bold text-[#1152d4] dark:text-blue-400">
+                    {/* In Stock Badge, Bundle Badge & SKU */}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold tracking-wider uppercase rounded-full border ${isDark ? "bg-green-900/30 text-green-400 border-green-800" : "bg-green-50 text-green-700 border-green-200"}`}>
+                                <span className="h-2 w-2 rounded-full bg-green-500" />
+                                {lang === "ar" ? "جاهز للتصدير والتصنيع B2B" : "Ready for B2B Export & Custom Orders"}
+                            </span>
+                            {product.is_bundle && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold tracking-wider uppercase rounded-full bg-amber-500 text-white shadow-xs">
+                                    ★ {lang === "ar" ? "طقم متكامل متعدد القطع" : "Luxury Multi-Piece Set"}
+                                </span>
+                            )}
+                        </div>
+                        <span className="font-mono text-xs font-bold text-[#1152d4] dark:text-blue-400 shrink-0">
                             #{selectedVariant?.sku || product.model_sku}
                         </span>
                     </div>
@@ -528,13 +526,13 @@ export default function ProductDetails() {
                                     to={`/product/${item.slug || item.model_sku}`}
                                     className={`group flex flex-col rounded-2xl overflow-hidden border transition-all ${isDark ? "bg-[#1a2332] border-gray-800 hover:border-gray-700" : "bg-white border-stone-200 shadow-xs hover:shadow-md"}`}
                                 >
-                                    <div className={`relative aspect-square overflow-hidden ${isDark ? "bg-[#141e2e]" : "bg-stone-50"}`}>
+                                    <div className={`relative aspect-square overflow-hidden flex items-center justify-center p-3 ${isDark ? "bg-[#141e2e]" : "bg-stone-50"}`}>
                                         {thumb ? (
                                             <img
                                                 src={thumb}
                                                 alt={item.name}
                                                 loading="lazy"
-                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
                                             />
                                         ) : (
                                             <div className="flex h-full w-full items-center justify-center text-gray-400">

@@ -451,7 +451,7 @@ export default function AdminDashboard() {
                       <img
                         src={p.image}
                         alt={p.name}
-                        className="size-10 rounded-lg object-cover bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
+                        className="size-10 rounded-lg object-contain p-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
                       />
                       <div>
                         <p className="font-bold text-slate-900 dark:text-white text-xs">

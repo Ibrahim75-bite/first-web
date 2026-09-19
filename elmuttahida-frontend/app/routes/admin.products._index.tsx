@@ -136,7 +136,7 @@ export default function AdminProductsList() {
                     <td className="px-4 py-3">
                       <div className="w-12 h-12 rounded-lg bg-stone-100 dark:bg-stone-800 overflow-hidden border border-slate-200 dark:border-slate-700 flex items-center justify-center">
                         {product.primary_image ? (
-                          <img src={product.primary_image} alt={product.name} className="w-full h-full object-cover" />
+                          <img src={product.primary_image} alt={product.name} className="w-full h-full object-contain p-0.5" />
                         ) : (
                           <span className="text-[10px] text-slate-400">N/A</span>
                         )}

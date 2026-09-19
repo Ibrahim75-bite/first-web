@@ -91,8 +91,8 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex flex-col justify-between pt-28 sm:pt-36">
         <div className="absolute inset-0 z-0">
-          <img src="/assets/hero.png" alt="Premium Vases Showcase" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25" />
+          <img src="/assets/hero.jpg" alt="El Muttahida Ceramic Masterpieces" className="w-full h-full object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-black/90 via-black/60 to-black/25" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 w-full flex-1 flex flex-col justify-center py-8 sm:py-16">
@@ -209,7 +209,7 @@ export default function Home() {
               {
                 title: t.heritageGold,
                 tag: t.signature,
-                image: "/assets/hero.png",
+                image: "/assets/hero.jpg",
               },
               {
                 title: t.minimalistBlack,
@@ -243,7 +243,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-5xl font-serif font-bold text-secondary dark:text-white">
               {t.featuredTitle}
             </h2>
-            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-2">
+            <p className="text-xs sm:text-sm text-stone-500 dark:stone-400 mt-2">
               {isArabic ? "استكشف بعضًا من أحدث إبداعاتنا الخزفية المصنوعة يدويًا" : "Handcrafted Egyptian pottery with international appeal"}
             </p>
           </div>
@@ -275,11 +275,11 @@ export default function Home() {
               },
             ].map((item, i) => (
               <Link key={i} to={item.url} className="group rounded-2xl overflow-hidden block bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-3 shadow-xs hover:shadow-xl transition-all">
-                <div className="aspect-[4/5] overflow-hidden rounded-xl bg-stone-100 dark:bg-stone-800">
+                <div className="aspect-square overflow-hidden rounded-xl bg-stone-50 dark:bg-stone-800/80 p-3 flex items-center justify-center">
                   <img
                     loading="lazy"
                     alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                     src={item.img}
                   />
                 </div>
