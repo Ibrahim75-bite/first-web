@@ -89,47 +89,47 @@ export default function Home() {
   return (
     <div className="overflow-x-hidden" dir={dir}>
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex flex-col justify-center pt-32 pb-32">
+      <section className="relative min-h-[90vh] flex flex-col justify-between pt-28 sm:pt-36">
         <div className="absolute inset-0 z-0">
           <img src="/assets/hero.png" alt="Premium Vases Showcase" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/25" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
-          <div className="max-w-2xl space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 w-full flex-1 flex flex-col justify-center py-8 sm:py-16">
+          <div className="max-w-2xl space-y-5 sm:space-y-8 animate-in fade-in slide-in-from-left-8 duration-1000">
             <span className="inline-block px-4 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-bold uppercase tracking-widest rounded-full">
               {t.premium}
             </span>
-            <h1 className="text-6xl md:text-8xl font-serif text-white leading-[1.1] tracking-tight">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-serif text-white leading-[1.15] tracking-tight">
               {t.heroTitle}
             </h1>
-            <p className="text-xl text-gray-200 leading-relaxed font-light">
+            <p className="text-base sm:text-lg md:text-xl text-gray-200 leading-relaxed font-light">
               {t.heroDesc}
             </p>
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Link to="/catalogue" className="px-8 py-4 bg-primary text-secondary font-bold rounded-full hover:bg-primary-dark transition-all shadow-xl hover:shadow-primary/20 hover:-translate-y-1">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2 sm:pt-4 w-full sm:w-auto">
+              <Link to="/catalogue" className="w-full sm:w-auto text-center px-8 py-4 bg-primary text-secondary font-bold rounded-full hover:bg-primary-dark transition-all shadow-xl hover:shadow-primary/20 hover:-translate-y-0.5">
                 {t.feelQuality}
               </Link>
-              <Link to="/products/custom-finishes" className="px-8 py-4 bg-transparent border border-white/30 text-white font-bold rounded-full hover:bg-white/10 backdrop-blur-sm transition-all">
+              <Link to="/products/custom-finishes" className="w-full sm:w-auto text-center px-8 py-4 bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold rounded-full backdrop-blur-sm transition-all hover:-translate-y-0.5">
                 {t.customInquiry}
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Trust Bar */}
-        <div className="absolute bottom-0 left-0 right-0 bg-secondary/80 backdrop-blur-md border-t border-white/5 py-4">
-          <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-between items-center gap-8 text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400">
-            <div className="flex items-center gap-3">
-              <span className="text-primary text-xl -mt-1">★★★★★</span>
+        {/* Trust Bar (Flows naturally at bottom of hero, never overlapping) */}
+        <div className="relative z-10 w-full bg-black/70 dark:bg-gray-950/80 backdrop-blur-md border-t border-white/10 py-3.5 sm:py-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap justify-between items-center gap-3 sm:gap-8 text-[10px] sm:text-xs uppercase tracking-[0.15em] sm:tracking-[0.2em] font-bold text-gray-300">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-primary text-base sm:text-xl -mt-1">★★★★★</span>
               <span>{t.trustReview}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-primary text-xl -mt-1">🌍</span>
+              <span className="text-primary text-base sm:text-xl -mt-1">🌍</span>
               <span>{t.trustExport}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-primary text-xl -mt-1">✅</span>
+              <span className="text-primary text-base sm:text-xl -mt-1">✅</span>
               <span>{t.trustIso}</span>
             </div>
           </div>
@@ -187,19 +187,19 @@ export default function Home() {
       </section>
 
       {/* Curated Collections */}
-      <section className="py-32 bg-surface dark:bg-gray-900/50" id="collections">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-end mb-16">
-            <div className="space-y-4 text-left">
-              <h2 className="text-4xl md:text-5xl font-serif text-secondary dark:text-white">{t.colTitle}</h2>
-              <p className="text-gray-500 text-lg">{t.colDesc}</p>
+      <section className="py-20 sm:py-32 bg-surface dark:bg-gray-900/50" id="collections">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-12 sm:mb-16">
+            <div className="space-y-2 sm:space-y-4 ltr:text-left rtl:text-right">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif text-secondary dark:text-white">{t.colTitle}</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg">{t.colDesc}</p>
             </div>
             <Link to="/catalogue" className="text-sm font-bold uppercase tracking-widest text-primary hover:text-primary-dark underline underline-offset-8">
               {t.colViewAll}
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 title: t.modernClay,
@@ -217,14 +217,17 @@ export default function Home() {
                 image: "/assets/glass.png",
               },
             ].map((col) => (
-              <Link key={col.title} to="/catalogue" className="group relative h-[600px] overflow-hidden rounded-3xl">
-                <img src={col.image} alt={col.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 via-secondary/20 to-transparent" />
-                <div className="absolute bottom-10 left-10 space-y-4">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">{col.tag}</span>
-                  <h3 className="text-3xl font-serif text-white">{col.title}</h3>
-                  <span className="text-sm font-medium text-white/80 group-hover:text-white flex items-center gap-2">
-                    {t.explore} <span className="translate-x-0 group-hover:translate-x-2 transition-transform">&rarr;</span>
+              <Link key={col.title} to="/catalogue" className="group relative h-[420px] sm:h-[500px] md:h-[600px] overflow-hidden rounded-2xl sm:rounded-3xl shadow-lg block">
+                <img src={col.image} alt={col.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
+                <div className="absolute bottom-6 sm:bottom-10 ltr:left-6 sm:ltr:left-10 rtl:right-6 sm:rtl:right-10 ltr:text-left rtl:text-right space-y-2 sm:space-y-4">
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/70 block">{col.tag}</span>
+                  <h3 className="text-2xl sm:text-3xl font-serif text-white">{col.title}</h3>
+                  <span className="text-xs sm:text-sm font-medium text-white/90 group-hover:text-white flex items-center gap-2">
+                    <span>{t.explore}</span>
+                    <span className="transform transition-transform group-hover:ltr:translate-x-1 group-hover:rtl:-translate-x-1">
+                      {isArabic ? "←" : "→"}
+                    </span>
                   </span>
                 </div>
               </Link>
@@ -286,7 +289,7 @@ export default function Home() {
           <p className="text-xl text-gray-500 dark:text-gray-400 font-light">
             {t.elevateDesc}
           </p>
-          <div className="flex flex-wrap justify-center gap-6 pt-6">
+          <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 pt-6 w-full sm:w-auto">
             <button
               onClick={() => {
                 const msg = lang === "ar"
@@ -297,15 +300,15 @@ export default function Home() {
                   "_blank"
                 );
               }}
-              className="px-10 py-5 bg-[#25D366] text-white font-bold rounded-full hover:scale-105 active:scale-100 transition-all shadow-xl hover:bg-[#128C7E]"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#25D366] text-white font-bold rounded-full hover:scale-105 active:scale-100 transition-all shadow-xl hover:bg-[#128C7E]"
             >
-              <svg className="h-5 w-5 inline-block mr-2 -mt-0.5" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
                 <path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.79 23.789l4.89-1.56A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-2.168 0-4.19-.617-5.908-1.682l-.424-.252-2.905.928.775-2.834-.277-.44A9.784 9.784 0 012.182 12c0-5.418 4.4-9.818 9.818-9.818S21.818 6.582 21.818 12s-4.4 9.818-9.818 9.818z" />
               </svg>
-              {t.elevateCTA1}
+              <span>{t.elevateCTA1}</span>
             </button>
-            <Link to="/catalogue" className="px-10 py-5 bg-transparent border border-gray-200 dark:border-gray-800 text-secondary dark:text-white font-bold rounded-full hover:bg-white dark:hover:bg-gray-900 transition-all shadow-sm">
+            <Link to="/catalogue" className="w-full sm:w-auto text-center px-8 py-4 bg-transparent border border-gray-200 dark:border-gray-800 text-secondary dark:text-white font-bold rounded-full hover:bg-white dark:hover:bg-gray-900 transition-all shadow-sm">
               {t.elevateCTA2}
             </Link>
           </div>
