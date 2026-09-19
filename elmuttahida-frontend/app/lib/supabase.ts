@@ -131,8 +131,10 @@ export async function fetchProductBySlug(slugOrCode: string): Promise<{
         return { product: null, variants: [], recommended: [] };
     }
 
-    // Try matching product_code (e.g. U0005) or handle (e.g. u0005-set-of-2-vases-and-plate-floweral)
-    let url = `${SUPABASE_URL}/rest/v1/products?or=(handle.eq.${encodeURIComponent(cleanParam)},product_code.eq.${encodeURIComponent(cleanParam.toUpperCase())},product_code.eq.${encodeURIComponent(cleanParam)})&select=*,product_variants(*)&limit=1`;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanParam);
+    let url = isUUID
+        ? `${SUPABASE_URL}/rest/v1/products?id=eq.${cleanParam}&select=*,product_variants(*)&limit=1`
+        : `${SUPABASE_URL}/rest/v1/products?or=(handle.eq.${encodeURIComponent(cleanParam)},product_code.eq.${encodeURIComponent(cleanParam.toUpperCase())},product_code.eq.${encodeURIComponent(cleanParam)})&select=*,product_variants(*)&limit=1`;
 
     try {
         const res = await fetch(url, { headers: defaultHeaders });
@@ -197,5 +199,29 @@ export async function fetchAllProductsAdmin(): Promise<SupabaseProduct[]> {
     } catch (err) {
         console.error("Error fetching admin products from Supabase:", err);
         return [];
+    }
+}
+
+/**
+ * Update a product in Supabase
+ */
+export async function updateProduct(id: string, updates: Partial<SupabaseProduct>): Promise<boolean> {
+    const url = `${SUPABASE_URL}/rest/v1/products?id=eq.${id}`;
+    try {
+        const res = await fetch(url, {
+            method: "PATCH",
+            headers: {
+                ...defaultHeaders,
+                "Prefer": "return=minimal",
+            },
+            body: JSON.stringify({
+                ...updates,
+                updated_at: new Date().toISOString(),
+            }),
+        });
+        return res.ok;
+    } catch (err) {
+        console.error("Error updating product in Supabase:", err);
+        return false;
     }
 }

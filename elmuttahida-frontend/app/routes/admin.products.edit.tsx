@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router";
 import { useState, useEffect, useContext } from "react";
 import { LanguageContext } from "../context/LanguageContext";
+import { fetchProductBySlug, updateProduct } from "../lib/supabase";
 
 export default function AdminProductEdit() {
   const { id } = useParams();
@@ -124,61 +125,64 @@ export default function AdminProductEdit() {
   };
 
   useEffect(() => {
-    // Mocking initial data for the dashboard UI demonstration
-    setTimeout(() => {
-      const sku = "U0002-PN05";
-      let localMeta = {} as any;
-      if (typeof window !== "undefined") {
-        const savedMeta = localStorage.getItem(`product_meta_${sku}`);
-        if (savedMeta) {
-          localMeta = JSON.parse(savedMeta);
+    if (!id) return;
+    setLoading(true);
+    fetchProductBySlug(id)
+      .then(({ product: spProduct, variants }) => {
+        if (spProduct) {
+          const bp = spProduct.bundle_pieces || [];
+          const p1 = bp[0] || {};
+          const p2 = bp[1] || {};
+          const p3 = bp[2] || {};
+
+          setFormData({
+            sku: spProduct.product_code,
+            base_price: String(spProduct.base_price || ""),
+            status: spProduct.status || "active",
+            in_stock: true,
+            name_en: spProduct.name_en || "",
+            description_en: spProduct.long_desc_en || spProduct.short_desc_en || "",
+            name_ar: spProduct.name_ar || "",
+            description_ar: spProduct.long_desc_ar || spProduct.short_desc_ar || "",
+            
+            item_type: spProduct.is_bundle ? "bundle_three" : "single",
+            height: variants[0]?.height_cm ? String(variants[0].height_cm) : "",
+            width: variants[0]?.width_cm ? String(variants[0].width_cm) : "",
+            depth: variants[0]?.length_cm ? String(variants[0].length_cm) : "",
+            
+            package_height: "",
+            package_width: "",
+            package_depth: "",
+            
+            single_weight: variants[0]?.weight_kg ? String(variants[0].weight_kg) : "",
+            bundle_weight: "",
+
+            item1_height: p1.dimensions_cm || "",
+            item1_width: "",
+            item1_depth: "",
+            item1_weight: p1.weight_kg ? String(p1.weight_kg) : "",
+
+            item2_height: p2.dimensions_cm || "",
+            item2_width: "",
+            item2_depth: "",
+            item2_weight: p2.weight_kg ? String(p2.weight_kg) : "",
+
+            item3_height: p3.dimensions_cm || "",
+            item3_width: "",
+            item3_depth: "",
+            item3_weight: p3.weight_kg ? String(p3.weight_kg) : "",
+
+            images: spProduct.images?.length
+              ? spProduct.images
+              : [spProduct.primary_image].filter(Boolean),
+          });
         }
-      }
-
-      setFormData({
-        sku: sku,
-        base_price: "499.00",
-        status: "active",
-        in_stock: localMeta.in_stock !== undefined ? localMeta.in_stock : true,
-        name_en: "Classic Porcelain Vase",
-        description_en: "A beautiful hand-crafted porcelain vase with golden trim.",
-        name_ar: "مزهرية بورسلين كلاسيكية",
-        description_ar: "مزهرية بورسلين جميلة مصنوعة يدوياً مع حواف ذهبية.",
-        
-        item_type: localMeta.item_type || "single",
-        height: localMeta.height || "28",
-        width: localMeta.width || "15",
-        depth: localMeta.depth || "15",
-        
-        package_height: localMeta.package_height || "",
-        package_width: localMeta.package_width || "",
-        package_depth: localMeta.package_depth || "",
-        
-        single_weight: localMeta.single_weight || "1.2",
-        bundle_weight: localMeta.bundle_weight || "",
-
-        item1_height: localMeta.item1_height || "28",
-        item1_width: localMeta.item1_width || "15",
-        item1_depth: localMeta.item1_depth || "15",
-        item1_weight: localMeta.item1_weight || "1.2",
-
-        item2_height: localMeta.item2_height || "24",
-        item2_width: localMeta.item2_width || "13",
-        item2_depth: localMeta.item2_depth || "13",
-        item2_weight: localMeta.item2_weight || "0.9",
-
-        item3_height: localMeta.item3_height || "20",
-        item3_width: localMeta.item3_width || "11",
-        item3_depth: localMeta.item3_depth || "11",
-        item3_weight: localMeta.item3_weight || "0.7",
-
-        images: [
-          "https://images.unsplash.com/photo-1578500494198-246f612d3b3d?w=600",
-          "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600"
-        ]
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load product for edit:", err);
+        setLoading(false);
       });
-      setLoading(false);
-    }, 500);
   }, [id]);
 
   const handleChange = (e: any) => {
@@ -213,38 +217,21 @@ export default function AdminProductEdit() {
     e.preventDefault();
     setSaving(true);
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`product_meta_${formData.sku}`, JSON.stringify({
-        in_stock: formData.in_stock,
-        item_type: formData.item_type,
-        height: formData.height,
-        width: formData.width,
-        depth: formData.depth,
-        package_height: formData.package_height,
-        package_width: formData.package_width,
-        package_depth: formData.package_depth,
-        single_weight: formData.single_weight,
-        bundle_weight: formData.bundle_weight,
-        item1_height: formData.item1_height,
-        item1_width: formData.item1_width,
-        item1_depth: formData.item1_depth,
-        item1_weight: formData.item1_weight,
-        item2_height: formData.item2_height,
-        item2_width: formData.item2_width,
-        item2_depth: formData.item2_depth,
-        item2_weight: formData.item2_weight,
-        item3_height: formData.item3_height,
-        item3_width: formData.item3_width,
-        item3_depth: formData.item3_depth,
-        item3_weight: formData.item3_weight,
-      }));
+    if (id) {
+      await updateProduct(id, {
+        name_en: formData.name_en,
+        name_ar: formData.name_ar,
+        long_desc_en: formData.description_en,
+        long_desc_ar: formData.description_ar,
+        base_price: parseFloat(formData.base_price) || 0,
+        status: formData.status,
+        images: formData.images,
+        primary_image: formData.images[0] || undefined,
+      });
     }
-    
-    // Simulate save
-    setTimeout(() => {
-      setSaving(false);
-      navigate("/admin/products");
-    }, 1000);
+
+    setSaving(false);
+    navigate("/admin/products");
   };
 
   if (loading) {
