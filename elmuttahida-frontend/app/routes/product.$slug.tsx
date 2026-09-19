@@ -3,6 +3,7 @@ import { Link, useNavigate, useLoaderData } from "react-router";
 import type { Route } from "./+types/product.$slug";
 import { LanguageContext } from "../context/LanguageContext";
 import { ThemeContext } from "../context/ThemeContext";
+import { PricingContext } from "../context/PricingContext";
 import { fetchProductBySlug, type SupabaseProduct } from "../lib/supabase";
 
 export async function loader({ params }: Route.LoaderArgs) {
@@ -109,6 +110,7 @@ export default function ProductDetails() {
     const { product: initialProduct, recommended: initialRecommended } = useLoaderData<typeof loader>();
     const { lang, dir } = useContext(LanguageContext);
     const { theme } = useContext(ThemeContext);
+    const { showPrices } = useContext(PricingContext);
     const isDark = theme === "dark";
     const navigate = useNavigate();
 
@@ -240,14 +242,14 @@ export default function ProductDetails() {
                     )}
 
                     {/* Main Image */}
-                    <div className={`relative flex-grow aspect-square rounded-3xl overflow-hidden shadow-lg border flex items-center justify-center ${isDark ? "bg-[#141e2e] border-gray-800" : "bg-[#f8f7f4] border-stone-200"}`}>
+                    <div className={`relative flex-grow aspect-square rounded-3xl overflow-hidden shadow-lg border ${isDark ? "bg-[#141e2e] border-gray-800" : "bg-[#f8f7f4] border-stone-200"}`}>
                         {mainImage ? (
                             <img
                                 key={mainImage}
                                 src={mainImage}
                                 alt={product.name}
                                 onClick={() => setIsModalOpen(true)}
-                                className="h-full w-full object-contain rounded-2xl cursor-zoom-in hover:scale-[1.02] transition-transform duration-300 p-1 sm:p-2"
+                                className="h-full w-full object-cover cursor-zoom-in hover:scale-[1.02] transition-transform duration-300"
                             />
                         ) : (
                             <div className={`flex h-full w-full items-center justify-center ${isDark ? "bg-[#141e2e]" : "bg-gray-100"}`}>
@@ -284,10 +286,17 @@ export default function ProductDetails() {
                         <h1 className={`text-2xl sm:text-3xl lg:text-4xl font-serif font-bold leading-tight ${isDark ? "text-white" : "text-gray-900"}`}>
                             {(lang === "ar" && product.nameAr) ? product.nameAr : product.name}
                         </h1>
-                        {product.base_price > 0 && (
+                        {showPrices && product.base_price > 0 && (
                             <p className="mt-2 text-xl font-bold text-amber-600 dark:text-amber-400">
                                 {product.base_price.toLocaleString()} {lang === "ar" ? "ج.م" : "EGP"}
                             </p>
+                        )}
+                        {!showPrices && (
+                            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50">
+                                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                                    ★ {lang === "ar" ? "الأسعار متاحة لطلبات الجملة والتصدير عبر سلة الاستفسار" : "B2B Export & Wholesale Pricing Available on Inquiry"}
+                                </span>
+                            </div>
                         )}
                     </div>
 
@@ -526,13 +535,13 @@ export default function ProductDetails() {
                                     to={`/product/${item.slug || item.model_sku}`}
                                     className={`group flex flex-col rounded-2xl overflow-hidden border transition-all ${isDark ? "bg-[#1a2332] border-gray-800 hover:border-gray-700" : "bg-white border-stone-200 shadow-xs hover:shadow-md"}`}
                                 >
-                                    <div className={`relative aspect-square overflow-hidden flex items-center justify-center p-3 ${isDark ? "bg-[#141e2e]" : "bg-stone-50"}`}>
+                                    <div className="relative aspect-square overflow-hidden">
                                         {thumb ? (
                                             <img
                                                 src={thumb}
                                                 alt={item.name}
                                                 loading="lazy"
-                                                className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             />
                                         ) : (
                                             <div className="flex h-full w-full items-center justify-center text-gray-400">

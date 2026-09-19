@@ -2,6 +2,7 @@ import { useEffect, useState, useContext, useCallback } from "react";
 import { Link, useLoaderData, useNavigate } from "react-router";
 import { LanguageContext } from "../context/LanguageContext";
 import { ThemeContext } from "../context/ThemeContext";
+import { PricingContext } from "../context/PricingContext";
 import type { Route } from "./+types/catalogue";
 import { fetchProducts as fetchSupabaseProducts, type SupabaseProduct } from "../lib/supabase";
 
@@ -139,6 +140,7 @@ export default function Catalogue() {
     const { initialData, initialTotal, initialPages } = useLoaderData<typeof loader>();
     const { lang, dir } = useContext(LanguageContext);
     const { theme } = useContext(ThemeContext);
+    const { showPrices } = useContext(PricingContext);
     const navigate = useNavigate();
 
     const t = labels[lang] || labels.en;
@@ -390,14 +392,14 @@ export default function Catalogue() {
                             >
                                 <div
                                     onClick={() => navigate(`/product/${prod.slug || prod.model_sku}`)}
-                                    className={`relative aspect-square overflow-hidden cursor-pointer flex items-center justify-center p-3 ${c.cardImageBg}`}
+                                    className="relative aspect-square overflow-hidden cursor-pointer"
                                 >
                                     {image ? (
                                         <img
                                             src={image}
                                             alt={prod.name}
                                             loading="lazy"
-                                            className="h-full w-full object-contain rounded-xl transition-transform duration-500 group-hover:scale-105"
+                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         />
                                     ) : (
                                         <div className="flex h-full w-full items-center justify-center text-sm text-gray-400">
@@ -447,9 +449,16 @@ export default function Catalogue() {
                                         <span className="font-mono text-[11px] font-bold text-[#1152d4] dark:text-blue-400">
                                             {prod.model_sku}
                                         </span>
-                                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                                            {formatPrice(prod.base_price)}
-                                        </span>
+                                        {showPrices && prod.base_price > 0 && (
+                                            <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                                {formatPrice(prod.base_price)}
+                                            </span>
+                                        )}
+                                        {!showPrices && (
+                                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                                {lang === "ar" ? "طلب تسعير B2B" : "Quote on Request"}
+                                            </span>
+                                        )}
                                     </div>
 
                                     <h3

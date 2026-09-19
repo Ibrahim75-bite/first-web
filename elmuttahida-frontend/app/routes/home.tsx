@@ -275,11 +275,11 @@ export default function Home() {
               },
             ].map((item, i) => (
               <Link key={i} to={item.url} className="group rounded-2xl overflow-hidden block bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-3 shadow-xs hover:shadow-xl transition-all">
-                <div className="aspect-square overflow-hidden rounded-xl bg-stone-50 dark:bg-stone-800/80 p-3 flex items-center justify-center">
+                <div className="aspect-square overflow-hidden rounded-xl">
                   <img
                     loading="lazy"
                     alt={item.name}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     src={item.img}
                   />
                 </div>

@@ -1,8 +1,10 @@
 import { useState, useContext, useEffect } from "react";
 import { LanguageContext } from "../context/LanguageContext";
+import { PricingContext } from "../context/PricingContext";
 
 export default function AdminSettings() {
   const { lang, dir } = useContext(LanguageContext);
+  const { showPrices, setShowPrices } = useContext(PricingContext);
   const isAr = lang === "ar";
 
   const t = {
@@ -114,6 +116,48 @@ export default function AdminSettings() {
               <option>EUR (€)</option>
             </select>
           </div>
+        </div>
+      </div>
+
+      {/* Pricing Visibility Policy (B2B Mode) */}
+      <div className="bg-white dark:bg-[#1a2234] border border-slate-200 dark:border-slate-800 rounded-xl p-6 max-w-2xl shadow-xs">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              {isAr ? "سياسة تسعير وعرض منتجات الجملة (B2B)" : "B2B Pricing & Public Visibility"}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {isAr ? "التحكم في إظهار أو إخفاء الأسعار لزوار الموقع وعملاء التصدير" : "Control whether retail/public prices are visible to visitors"}
+            </p>
+          </div>
+          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${showPrices ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400" : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400"}`}>
+            {showPrices ? (isAr ? "الأسعار مفعّلة" : "Prices Visible") : (isAr ? "الأسعار مخفية (RFQ)" : "Prices Hidden (RFQ)")}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60">
+          <div className="space-y-1 max-w-md">
+            <label className="text-xs font-bold text-slate-900 dark:text-white block cursor-pointer" onClick={() => setShowPrices(!showPrices)}>
+              {isAr ? "إظهار أسعار المنتجات في المتجر" : "Show Product Prices on Website"}
+            </label>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              {isAr 
+                ? "عند إيقاف هذا الخيار، سيتم إخفاء جميع الأسعار في الكتالوج وتفاصيل المنتجات وسلة الاستفسار ليعمل الموقع ككتالوج تصدير رسمي (طلب عروض أسعار)." 
+                : "When turned OFF, prices are hidden across all public pages (catalogue, product details, inquiry cart), enabling pure wholesale & B2B export RFQ mode."}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showPrices}
+            onClick={() => setShowPrices(!showPrices)}
+            className={`relative inline-flex h-6 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${showPrices ? "bg-[#1152d4]" : "bg-slate-300 dark:bg-slate-700"}`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${showPrices ? (dir === "rtl" ? "-translate-x-6" : "translate-x-6") : "translate-x-0"}`}
+            />
+          </button>
         </div>
       </div>
     </div>

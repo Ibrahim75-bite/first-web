@@ -11,6 +11,7 @@ import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
+import { PricingProvider } from "./context/PricingContext";
 
 import type { Route } from "./+types/root";
 import "./app.css";
@@ -51,9 +52,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body className="antialiased min-h-screen">
         <ThemeProvider>
           <LanguageProvider>
-            <Header />
-            {children}
-            <Footer />
+            <PricingProvider>
+              <Header />
+              {children}
+              <Footer />
+            </PricingProvider>
           </LanguageProvider>
         </ThemeProvider>
         <ScrollRestoration />
