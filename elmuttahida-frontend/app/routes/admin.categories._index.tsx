@@ -154,58 +154,65 @@ export default function AdminCategories() {
   }
 
   return (
-    <div dir={dir}>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">{t.title}</h1>
+    <div dir={dir} className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">{t.title}</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {isAr ? "إدارة تصنيفات وتصنيفات المزهريات والقطع الفخارية" : "Manage pottery product classifications and catalog taxonomies"}
+          </p>
+        </div>
         <button 
           onClick={handleOpenAdd}
-          className="bg-amber-500 hover:bg-amber-600 text-black font-semibold py-2 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 active:scale-95"
+          className="inline-flex items-center justify-center gap-2 bg-[#1152d4] hover:bg-blue-700 text-white font-semibold text-xs py-2.5 px-4 rounded-lg shadow-sm shadow-blue-500/20 transition-colors"
         >
-          {t.addNew}
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
+          <span>{t.addNew}</span>
         </button>
       </div>
 
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-xl">
+      <div className="bg-white dark:bg-[#1a2234] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-neutral-400">
-            <thead className="bg-neutral-950/60 text-neutral-300 border-b border-neutral-800">
+          <table className="w-full text-left text-xs text-slate-600 dark:text-slate-300 border-collapse">
+            <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 font-bold uppercase text-[11px] tracking-wider">
               <tr>
-                <th scope="col" className={`px-6 py-4 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{t.name}</th>
-                <th scope="col" className={`px-6 py-4 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{t.slug}</th>
-                <th scope="col" className={`px-6 py-4 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{t.productsCount}</th>
-                <th scope="col" className={`px-6 py-4 font-semibold ${isAr ? 'text-right' : 'text-left'}`}>{t.actions}</th>
+                <th scope="col" className={`px-6 py-3.5 font-bold ${isAr ? 'text-right' : 'text-left'}`}>{t.name}</th>
+                <th scope="col" className={`px-6 py-3.5 font-bold ${isAr ? 'text-right' : 'text-left'}`}>{t.slug}</th>
+                <th scope="col" className={`px-6 py-3.5 font-bold ${isAr ? 'text-right' : 'text-left'}`}>{t.productsCount}</th>
+                <th scope="col" className={`px-6 py-3.5 font-bold ${isAr ? 'text-left' : 'text-right'}`}>{t.actions}</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {categories.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-neutral-500 font-medium">
+                  <td colSpan={4} className="px-6 py-12 text-center text-slate-400 font-medium">
                     {isAr ? "لا توجد فئات حالياً. قم بإضافة فئة جديدة." : "No categories found. Create a new one to get started."}
                   </td>
                 </tr>
               ) : (
                 categories.map((cat) => (
-                  <tr key={cat.id} className="border-b border-neutral-800/40 hover:bg-neutral-800/20 transition-all duration-200">
-                    <td className={`px-6 py-4 text-white font-medium ${isAr ? 'text-right' : 'text-left'}`}>
+                  <tr key={cat.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
+                    <td className={`px-6 py-4 text-slate-900 dark:text-white font-bold ${isAr ? 'text-right' : 'text-left'}`}>
                       {isAr ? cat.nameAr : cat.nameEn}
                     </td>
-                    <td className={`px-6 py-4 font-mono text-neutral-400 text-xs ${isAr ? 'text-right' : 'text-left'}`}>
+                    <td className={`px-6 py-4 font-mono text-slate-400 text-xs ${isAr ? 'text-right' : 'text-left'}`}>
                       {cat.slug}
                     </td>
-                    <td className={`px-6 py-4 font-semibold text-neutral-300 ${isAr ? 'text-right' : 'text-left'}`}>
+                    <td className={`px-6 py-4 font-bold text-slate-900 dark:text-white ${isAr ? 'text-right' : 'text-left'}`}>
                       {cat.count}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3 justify-start">
+                    <td className={`px-6 py-4 ${isAr ? 'text-left' : 'text-right'}`}>
+                      <div className={`flex items-center gap-3 ${isAr ? 'justify-start' : 'justify-end'}`}>
                         <button 
                           onClick={() => handleOpenEdit(cat)}
-                          className="text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200"
+                          className="text-[#1152d4] hover:underline font-bold text-xs"
                         >
                           {t.edit}
                         </button>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
                         <button 
                           onClick={() => handleOpenDelete(cat)}
-                          className="text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200"
+                          className="text-red-500 hover:underline font-bold text-xs"
                         >
                           {t.delete}
                         </button>
@@ -219,82 +226,82 @@ export default function AdminCategories() {
         </div>
       </div>
 
-      {/* Add / Edit Modal */}
+      {/* Add / Edit Category Modal */}
       {showAddEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity duration-300">
-          <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" dir={dir}>
-            <div className="px-6 py-4 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/40">
-              <h2 className="text-xl font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300">
+          <div className="w-full max-w-md bg-white dark:bg-[#1a2234] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" dir={dir}>
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/60 dark:bg-slate-900/40">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 {selectedCategory ? t.editCategory : t.addCategory}
               </h2>
               <button 
                 onClick={() => setShowAddEditModal(false)}
-                className="text-neutral-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <form onSubmit={handleSaveCategory} className="p-6 space-y-4">
+            <form onSubmit={handleSaveCategory} className="p-6 space-y-4 text-xs">
               <div>
-                <label className="block text-sm font-semibold text-neutral-400 mb-1.5">{t.nameEn}</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{t.nameEn}</label>
                 <input 
                   type="text"
                   required
                   value={formNameEn}
                   onChange={handleNameEnChange}
                   placeholder="e.g. Vases"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-[#1152d4] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-neutral-400 mb-1.5">{t.nameAr}</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{t.nameAr}</label>
                 <input 
                   type="text"
                   required
                   value={formNameAr}
                   onChange={(e) => setFormNameAr(e.target.value)}
                   placeholder="مثال: مزهريات"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-[#1152d4] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-neutral-400 mb-1.5">{t.slug}</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{t.slug}</label>
                 <input 
                   type="text"
                   required
                   value={formSlug}
                   onChange={(e) => setFormSlug(e.target.value)}
                   placeholder="e.g. vases"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-[#1152d4] transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-neutral-400 mb-1.5">{t.productsCount}</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">{t.productsCount}</label>
                 <input 
                   type="number"
                   required
                   value={formCount}
                   onChange={(e) => setFormCount(parseInt(e.target.value) || 0)}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg px-3.5 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-[#1152d4] transition-colors"
                 />
               </div>
 
-              <div className="flex gap-3 justify-end pt-4 border-t border-neutral-800/60 mt-6">
+              <div className="flex gap-2.5 justify-end pt-4 border-t border-slate-100 dark:border-slate-800 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowAddEditModal(false)}
-                  className="px-5 py-2.5 bg-neutral-950 border border-neutral-850 hover:bg-neutral-800 text-neutral-300 font-semibold rounded-xl transition-colors"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-lg transition-colors text-xs"
                 >
                   {t.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-xl transition-colors shadow-lg shadow-amber-500/10"
+                  className="px-4 py-2 bg-[#1152d4] hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-sm shadow-blue-500/20 text-xs"
                 >
                   {selectedCategory ? t.save : t.create}
                 </button>
@@ -306,30 +313,30 @@ export default function AdminCategories() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm transition-opacity duration-300">
-          <div className="w-full max-w-sm bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" dir={dir}>
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4 text-red-500">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300">
+          <div className="w-full max-w-sm bg-white dark:bg-[#1a2234] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200" dir={dir}>
+            <div className="p-6 text-xs">
+              <div className="flex items-center gap-3 mb-3 text-red-500">
                 <svg className="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                <h2 className="text-lg font-bold text-white">
-                  {t.confirmDelete}
-                </h2>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t.confirmDelete}</h3>
               </div>
-              <p className="text-neutral-400 text-sm leading-relaxed mb-6">
+              <p className="text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
                 {t.deleteWarning}
               </p>
-              <div className="flex gap-3 justify-end">
+              <div className="flex gap-2.5 justify-end">
                 <button
+                  type="button"
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 bg-neutral-950 border border-neutral-850 hover:bg-neutral-800 text-neutral-300 font-semibold rounded-xl transition-colors text-sm"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-lg transition-colors"
                 >
                   {t.cancel}
                 </button>
                 <button
+                  type="button"
                   onClick={handleDeleteConfirm}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors text-sm shadow-lg shadow-red-600/20"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors shadow-sm"
                 >
                   {t.deleteBtn}
                 </button>

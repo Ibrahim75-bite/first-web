@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router";
-import { useState, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import { LanguageContext } from "../context/LanguageContext";
 
 export default function AdminProductNew() {
@@ -8,14 +8,20 @@ export default function AdminProductNew() {
   const { lang, dir } = useContext(LanguageContext);
   const isAr = lang === "ar";
   
-  // Read currency from localStorage
-  const savedCurrency = localStorage.getItem("currency") || "USD ($)";
-  let currencySymbol = "$";
-  if (savedCurrency.includes("EGP")) {
-    currencySymbol = isAr ? "ج.م" : "EGP";
-  } else if (savedCurrency.includes("EUR")) {
-    currencySymbol = "€";
-  }
+  const [currencySymbol, setCurrencySymbol] = useState("$");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedCurrency = localStorage.getItem("currency") || "USD ($)";
+      if (savedCurrency.includes("EGP")) {
+        setCurrencySymbol(isAr ? "ج.م" : "EGP");
+      } else if (savedCurrency.includes("EUR")) {
+        setCurrencySymbol("€");
+      } else {
+        setCurrencySymbol("$");
+      }
+    }
+  }, [isAr]);
 
   const [formData, setFormData] = useState({
     sku: "",
@@ -193,7 +199,7 @@ export default function AdminProductNew() {
         <button 
           onClick={handleSubmit}
           disabled={saving}
-          className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-black font-semibold py-2 px-6 rounded-xl transition-colors flex items-center"
+          className="bg-[#1152d4] hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors flex items-center shadow-sm shadow-blue-500/20 text-xs"
         >
           {saving ? t.creating : t.submitBtn}
         </button>

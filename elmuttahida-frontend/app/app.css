@@ -13,6 +13,15 @@
   --color-secondary: #1a1a1a;
   --color-surface: #f9f8f6;
   --color-surface-dark: #101010;
+
+  /* Stitch Admin Theme */
+  --color-stitch-primary: #1152d4;
+  --color-stitch-bg-light: #f8f9fc;
+  --color-stitch-bg-dark: #101622;
+  --color-stitch-card-light: #ffffff;
+  --color-stitch-card-dark: #1a2234;
+  --color-stitch-border-light: #e7ebf3;
+  --color-stitch-border-dark: #1e293b;
 }
 
 html,
